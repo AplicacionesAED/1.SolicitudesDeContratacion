@@ -131,6 +131,7 @@ export function SolicitudDetallePage() {
     { key: 'memoria', label: 'Memoria', visible: solicitud.categoria === 'DIRECTA' && (!!solicitud.memoria?.contenidoHtml || solicitud.memoria?.imagenes?.length > 0 || solicitud.memoria?.filas?.length > 0) },
     { key: 'cronograma', label: 'Cronograma', visible: Boolean(solicitud.cronograma) },
     { key: 'documentos', label: 'Documentos', visible: (ARCHIVOS_LABELS.filter(([c]) => solicitud[c]).length + (solicitud.archivosAnexos?.length ?? 0)) > 0, cuenta: ARCHIVOS_LABELS.filter(([c]) => solicitud[c]).length + (solicitud.archivosAnexos?.length ?? 0) },
+    { key: 'historial', label: 'Historial de seguimiento', visible: true, cuenta: solicitud.historial?.length ?? 0 },
   ].filter((x) => x.visible);
   const seccionActual = SECCIONES.some((x) => x.key === seccion) ? seccion : 'resumen';
 
@@ -253,51 +254,51 @@ export function SolicitudDetallePage() {
         <h2 className={styles.sectionTitle}>Datos de la solicitud</h2>
         <div className={styles.infoGrid}>
           {solicitud.tercero && (
-            <div className={styles.infoItem}>
+            <div className={`${styles.infoItem} ${d.dato}`}>
               <span className={styles.infoLabel}>Tercero</span>
               <span className={styles.infoValue}><Link to={`/terceros/${solicitud.tercero.id}`}>{solicitud.tercero.razonSocial} — {solicitud.tercero.nit}</Link></span>
             </div>
           )}
           {solicitud.tipoContrato && (
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Tipo de contrato</span><span className={styles.infoValue}>{tipoContratoLabel(solicitud.tipoContrato)}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Tipo de contrato</span><span className={styles.infoValue}>{tipoContratoLabel(solicitud.tipoContrato)}</span></div>
           )}
           {solicitud.plazoEjecucion && (
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Plazo de ejecución</span><span className={styles.infoValue}>{solicitud.plazoEjecucion}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Plazo de ejecución</span><span className={styles.infoValue}>{solicitud.plazoEjecucion}</span></div>
           )}
           {solicitud.valorFinal != null && (
-            <div className={styles.infoItem}>
+            <div className={`${styles.infoItem} ${d.dato}`}>
               <span className={styles.infoLabel}>Valor final</span>
               <span className={styles.infoValue}>{formatCurrency(solicitud.valorFinal)}<br /><em style={{ fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)', fontStyle: 'italic' }}>{solicitud.valorEnLetras ?? numeroALetras(Number(solicitud.valorFinal))}</em></span>
             </div>
           )}
           {solicitud.formaPago && (
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Forma de pago</span><span className={styles.infoValue}>{solicitud.formaPago}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Forma de pago</span><span className={styles.infoValue}>{solicitud.formaPago}</span></div>
           )}
           {solicitud.asunto && (
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Asunto</span><span className={styles.infoValue}>{solicitud.asunto}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Asunto</span><span className={styles.infoValue}>{solicitud.asunto}</span></div>
           )}
         </div>
 
         {solicitud.descripcionActividad && (
-          <div className={styles.infoItem} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
+          <div className={`${styles.infoItem} ${d.dato}`} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
             <span className={styles.infoLabel}>Objeto</span>
             <span className={styles.infoValue}>{solicitud.descripcionActividad}</span>
           </div>
         )}
         {solicitud.alcance && (
-          <div className={styles.infoItem} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
+          <div className={`${styles.infoItem} ${d.dato}`} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
             <span className={styles.infoLabel}>Alcance</span>
             <span className={styles.infoValue}>{solicitud.alcance}</span>
           </div>
         )}
         {solicitud.terminosReferencia && (
-          <div className={styles.infoItem} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
+          <div className={`${styles.infoItem} ${d.dato}`} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
             <span className={styles.infoLabel}>Términos de referencia</span>
             <span className={styles.infoValue}>{solicitud.terminosReferencia}</span>
           </div>
         )}
         {solicitud.condicionesEspeciales && (
-          <div className={styles.infoItem} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
+          <div className={`${styles.infoItem} ${d.dato}`} style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
             <span className={styles.infoLabel}>Condiciones especiales</span>
             <span className={styles.infoValue}>{solicitud.condicionesEspeciales}</span>
           </div>
@@ -308,24 +309,24 @@ export function SolicitudDetallePage() {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Información del solicitante</h2>
           <div className={styles.infoGrid}>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Solicitante</span><span className={styles.infoValue}>{solicitud.solicitante?.nombre ?? '—'}</span></div>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Cargo</span><span className={styles.infoValue}>{solicitud.solicitante?.cargo ?? '—'}</span></div>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Correo</span><span className={styles.infoValue}>{solicitud.solicitante?.email ?? '—'}</span></div>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Fecha de solicitud</span><span className={styles.infoValue}>{new Date(solicitud.fechaSolicitud).toLocaleDateString('es-CO')}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Solicitante</span><span className={styles.infoValue}>{solicitud.solicitante?.nombre ?? '—'}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Cargo</span><span className={styles.infoValue}>{solicitud.solicitante?.cargo ?? '—'}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Correo</span><span className={styles.infoValue}>{solicitud.solicitante?.email ?? '—'}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Fecha de solicitud</span><span className={styles.infoValue}>{new Date(solicitud.fechaSolicitud).toLocaleDateString('es-CO')}</span></div>
             {solicitud.fechaAprobacionDirector && (
-              <div className={styles.infoItem}><span className={styles.infoLabel}>Fecha aprobación director</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionDirector).toLocaleDateString('es-CO')}</span></div>
+              <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Fecha aprobación director</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionDirector).toLocaleDateString('es-CO')}</span></div>
             )}
             {solicitud.fechaAprobacionControlesProyeccion && (
-              <div className={styles.infoItem}><span className={styles.infoLabel}>Fecha aprobación Controles (Proyección)</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionControlesProyeccion).toLocaleDateString('es-CO')}</span></div>
+              <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Fecha aprobación Controles (Proyección)</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionControlesProyeccion).toLocaleDateString('es-CO')}</span></div>
             )}
             {solicitud.fechaAprobacionResidenteAdministrativo && (
-              <div className={styles.infoItem}><span className={styles.infoLabel}>Fecha aprobación Residente Administrativo</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionResidenteAdministrativo).toLocaleDateString('es-CO')}</span></div>
+              <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Fecha aprobación Residente Administrativo</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionResidenteAdministrativo).toLocaleDateString('es-CO')}</span></div>
             )}
             {solicitud.fechaAprobacionGerenteCompras && (
-              <div className={styles.infoItem}><span className={styles.infoLabel}>Fecha aprobación Gerente de Compras</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionGerenteCompras).toLocaleDateString('es-CO')}</span></div>
+              <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Fecha de firma Gerente de Compras</span><span className={styles.infoValue}>{new Date(solicitud.fechaAprobacionGerenteCompras).toLocaleDateString('es-CO')}</span></div>
             )}
             {solicitud.aprobador && (
-              <div className={styles.infoItem}><span className={styles.infoLabel}>Director aprobador</span><span className={styles.infoValue}>{solicitud.aprobador.nombre}</span></div>
+              <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Director aprobador</span><span className={styles.infoValue}>{solicitud.aprobador.nombre}</span></div>
             )}
           </div>
         </div>
@@ -333,10 +334,10 @@ export function SolicitudDetallePage() {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Proyecto y frentes</h2>
           <div className={styles.infoGrid}>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Proyecto</span><span className={styles.infoValue}>{solicitud.proyectoNombre ?? '—'}</span></div>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Frentes</span><span className={styles.infoValue}>{solicitud.frentesNombres?.length > 0 ? solicitud.frentesNombres.join(', ') : '—'}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Proyecto</span><span className={styles.infoValue}>{solicitud.proyectoNombre ?? '—'}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Frentes</span><span className={styles.infoValue}>{solicitud.frentesNombres?.length > 0 ? solicitud.frentesNombres.join(', ') : '—'}</span></div>
             {solicitud.etapasUnicas?.length > 0 && (
-              <div className={styles.infoItem}>
+              <div className={`${styles.infoItem} ${d.dato}`}>
                 <span className={styles.infoLabel}>Etapa</span>
                 <span className={styles.infoValue} style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {solicitud.etapasUnicas.map((e) => (
@@ -346,7 +347,7 @@ export function SolicitudDetallePage() {
               </div>
             )}
             {solicitud.numeroContratoAdpro && (
-              <div className={styles.infoItem}><span className={styles.infoLabel}>Número Adpro</span><span className={styles.infoValue}>{solicitud.numeroContratoAdpro}</span></div>
+              <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Número Adpro</span><span className={styles.infoValue}>{solicitud.numeroContratoAdpro}</span></div>
             )}
           </div>
         </div>
@@ -356,7 +357,7 @@ export function SolicitudDetallePage() {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Otrosís</h2>
           {solicitud.otrosis.map((o) => (
-            <div key={o.id} className={styles.infoItem} style={{ cursor: 'pointer' }} onClick={() => navigate(`/solicitudes/${o.id}`)}>
+            <div key={o.id} className={`${styles.infoItem} ${d.dato}`} style={{ cursor: 'pointer' }} onClick={() => navigate(`/solicitudes/${o.id}`)}>
               <span className={styles.infoValue} style={{ fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 {o.consecutivo} — <SolicitudBadge estado={o.estado} />
                 {o.importadoHistorico && <HistoricoBadge numeroOtrosi={o.numeroOtrosi} />}
@@ -684,8 +685,8 @@ export function SolicitudDetallePage() {
             </Button>
           </div>
           <div className={styles.infoGrid}>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Fecha de inicio</span><span className={styles.infoValue}>{new Date(solicitud.cronograma.fechaInicio).toLocaleDateString('es-CO')}</span></div>
-            <div className={styles.infoItem}><span className={styles.infoLabel}>Fecha de fin</span><span className={styles.infoValue}>{new Date(solicitud.cronograma.fechaFin).toLocaleDateString('es-CO')}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Fecha de inicio</span><span className={styles.infoValue}>{new Date(solicitud.cronograma.fechaInicio).toLocaleDateString('es-CO')}</span></div>
+            <div className={`${styles.infoItem} ${d.dato}`}><span className={styles.infoLabel}>Fecha de fin</span><span className={styles.infoValue}>{new Date(solicitud.cronograma.fechaFin).toLocaleDateString('es-CO')}</span></div>
           </div>
           <div className={styles.card}>
             <table className={styles.table}>
@@ -758,7 +759,7 @@ export function SolicitudDetallePage() {
       )}
 
 
-      <HistorialSeguimiento historial={solicitud.historial} />
+      {seccionActual === 'historial' && <HistorialSeguimiento historial={solicitud.historial} />}
     </div>
   );
 }

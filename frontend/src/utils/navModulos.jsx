@@ -34,21 +34,26 @@ function IconTerceros() {
   return <Building2 size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} aria-hidden="true" />;
 }
 
+// `directo`: el grupo es UNA sola entrada del menu (va directo a su primer item, sin desplegable). Un item `sinMenu` (sin
+// `to`) no es una entrada del menu: solo existe para que su permiso se configure por rol en este mismo arbol -- "Nueva
+// solicitud" se abre desde el boton del listado.
 export const NAV_GROUPS = [
   {
     title: 'Solicitudes Directas',
     icon: IconSolicitudesDirectas,
+    directo: true,
     items: [
       { label: 'Todas las solicitudes', to: '/solicitudes-directas', permiso: 'ver_solicitudes_directas' },
-      { label: 'Nueva solicitud', to: '/solicitudes-directas/nueva', permiso: 'crear_solicitudes_directas' },
+      { label: 'Nueva solicitud', permiso: 'crear_solicitudes_directas', sinMenu: true },
     ],
   },
   {
     title: 'Solicitudes Indirectas',
     icon: IconSolicitudesIndirectas,
+    directo: true,
     items: [
       { label: 'Todas las solicitudes', to: '/solicitudes-indirectas', permiso: 'ver_solicitudes_indirectas' },
-      { label: 'Nueva solicitud', to: '/solicitudes-indirectas/nueva', permiso: 'crear_solicitudes_indirectas' },
+      { label: 'Nueva solicitud', permiso: 'crear_solicitudes_indirectas', sinMenu: true },
     ],
   },
   {

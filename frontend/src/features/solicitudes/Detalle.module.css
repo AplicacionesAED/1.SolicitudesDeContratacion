@@ -1,5 +1,10 @@
 /* Detalle de la solicitud (rediseno 2026-10-09): situacion arriba (que sigue y quien lo hace), datos en pestañas. */
 .page {
+  /* Mismo criterio de contraste que el formulario: tarjetas blancas sobre el fondo tintado y bordes con mas peso.
+     Los tokens se ajustan SOLO dentro del detalle. */
+  --color-surface: #fff;
+  --color-border: var(--color-border-strong);
+  --detalle-ro: color-mix(in srgb, var(--color-brand-deep) 5%, white);
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -155,8 +160,10 @@
 .tabs {
   display: flex;
   gap: var(--space-lg);
+  align-items: stretch;
   border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .tab {
@@ -166,13 +173,14 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 10px 2px;
-  margin-bottom: -1px;
+  padding: 12px 4px;
   font: inherit;
   font-weight: 500;
+  line-height: 1.2;
   white-space: nowrap;
-  color: var(--color-ink-muted);
-  border-bottom: 2px solid transparent;
+  color: var(--color-ink-secondary);
+  border-bottom: 0;
+  box-shadow: inset 0 -2px 0 transparent;
 }
 
 .tab:hover {
@@ -182,7 +190,7 @@
 .tabActive {
   color: var(--color-primary);
   font-weight: 600;
-  border-bottom-color: var(--color-primary);
+  box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 
 .tabCuenta {
@@ -193,4 +201,42 @@
   text-align: center;
   background: var(--color-surface-sunken);
   color: var(--color-ink-secondary);
+}
+
+/* Dato de solo lectura: celda plana sombreada con la etiqueta arriba y el valor en negro, para separar cada dato del resto. */
+.dato {
+  padding: 8px 12px;
+  background: var(--detalle-ro);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.dato > span:first-child {
+  color: var(--color-ink-secondary);
+}
+
+.dato > span:last-child {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+/* Tablas de solo lectura (cuadro, memoria, cronograma): filas mas bajas, rayado suave y celdas con borde. */
+.page table th,
+.page table td {
+  padding: 6px 10px;
+  border-right: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.page table th:last-child,
+.page table td:last-child {
+  border-right: none;
+}
+
+.page table th {
+  font-size: 0.6875rem;
+}
+
+.page table tbody tr:nth-child(even):not([style*="font-weight"]) td {
+  background: color-mix(in srgb, var(--color-primary) 3%, white);
 }

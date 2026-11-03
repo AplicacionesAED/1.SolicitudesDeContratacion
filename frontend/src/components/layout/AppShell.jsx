@@ -6,7 +6,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ReactLenis } from 'lenis/react';
-import { ChevronRight, Home, Settings } from 'lucide-react';
+import { ChevronRight, Home, Menu, Settings } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { usuarioTienePermiso } from '../../utils/permisos.js';
 import { NAV_GROUPS } from '../../utils/navModulos.jsx';
@@ -52,13 +52,27 @@ function migaFueraDelMenu(path) {
   return null;
 }
 
+// Pantallas de trabajo denso (formularios, listado y detalle de solicitudes, workflows): el sidebar se oculta
+// para ganar ancho y se abre encima del contenido con el boton de menu del topbar.
+const RUTAS_SIN_SIDEBAR = [
+  /^\/solicitudes-(directas|indirectas)\/nueva(\/[^/]+)?$/,
+  /^\/solicitudes-(directas|indirectas)\/importar-historico$/,
+  /^\/solicitudes\/importar-historico$/,
+  /^\/solicitudes\/[^/]+\/editar$/,
+  /^\/solicitudes-(directas|indirectas)$/,
+  /^\/solicitudes\/[^/]+$/,
+  /^\/configuracion\/workflows(\/.*)?$/,
+];
+
 export function AppShell() {
   const location = useLocation();
   const { usuario } = useAuth();
   const [openGroup, setOpenGroup] = useState(null);
+  const [menuAbierto, setMenuAbierto] = useState(false);
   const navRef = useRef(null);
   const closeTimerRef = useRef(null);
 
+  const ocultarSidebar = RUTAS_SIN_SIDEBAR.some((re) => re.test(location.pathname));
   const itemActivo = encontrarItemActivo(location.pathname);
   const activeGroupTitle = itemActivo?.grupoTitulo;
 
@@ -73,6 +87,9 @@ export function AppShell() {
   } else {
     crumb = migaFueraDelMenu(path);
   }
+  // "Nueva solicitud" e "Importar historico" cuelgan del listado, sin item propio en el menu.
+  if (itemActivo && /\/nueva(\/|$)/.test(path)) crumb = { group: itemActivo.grupoTitulo, label: 'Nueva solicitud' };
+  else if (itemActivo && /\/importar-historico$/.test(path)) crumb = { group: itemActivo.grupoTitulo, label: 'Importar histórico' };
 
   // El flyout esta separado de su fila por un gap (ver .flyout en el CSS), asi
   // que moviendo el mouse en diagonal el cursor puede pasar por un pixel que no
@@ -103,6 +120,18 @@ export function AppShell() {
 
   useEffect(() => cancelScheduledClose, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // El menu flotante se cierra al cambiar de pantalla y con Escape.
+  useEffect(() => setMenuAbierto(false), [location.pathname]);
+  useEffect(() => {
+    if (!menuAbierto) closeNow();
+  }, [menuAbierto]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!menuAbierto) return undefined;
+    const alTeclear = (e) => e.key === 'Escape' && setMenuAbierto(false);
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [menuAbierto]);
+
   // Defensa contra un bug real (2026-09-18): esta app nunca debe scrollear la
   // pagina nativa -- el unico scroll real vive en `.scrollArea` (Lenis, ver
   // index.css#html,body { overflow: hidden }). `overflow: hidden` bloquea el
@@ -122,8 +151,17 @@ export function AppShell() {
   const puedeVerRoles = usuarioTienePermiso(usuario, 'ver_roles');
 
   return (
-    <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+    <div className={`${styles.shell} ${ocultarSidebar ? styles.shellSinSidebar : ''}`}>
+      {ocultarSidebar && (
+        <button
+          type="button"
+          className={`${styles.backdrop} ${menuAbierto ? styles.backdropAbierto : ''}`}
+          aria-label="Cerrar menú"
+          tabIndex={menuAbierto ? 0 : -1}
+          onClick={() => setMenuAbierto(false)}
+        />
+      )}
+      <aside className={`${styles.sidebar} ${ocultarSidebar ? `${styles.sidebarFlotante} ${menuAbierto ? styles.sidebarAbierto : ''}` : ''}`}>
         <div className={styles.brand}>
           <img className={styles.brandLogo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="aed" />
           <span className={styles.brandDivider} aria-hidden="true" />
@@ -156,13 +194,28 @@ export function AppShell() {
             // declara `permiso` o el usuario lo tiene (ADMIN lo bypassea). Un grupo
             // entero se oculta si ningun item suyo quedo visible.
             const itemsVisibles = group.items.filter(
-              (item) => (!item.soloAdmin || usuario?.esAdmin) && (!item.permiso || usuarioTienePermiso(usuario, item.permiso))
+              (item) => !item.sinMenu && (!item.soloAdmin || usuario?.esAdmin) && (!item.permiso || usuarioTienePermiso(usuario, item.permiso))
             );
             if (itemsVisibles.length === 0) return null;
 
             const isOpen = openGroup === group.title;
             const isActiveGroup = activeGroupTitle === group.title;
             const GroupIcon = group.icon;
+            if (group.directo) {
+              return (
+                <NavLink
+                  key={group.title}
+                  to={itemsVisibles[0].to}
+                  onClick={closeNow}
+                  className={`${styles.navGroupButton} ${isActiveGroup ? styles.navGroupButtonActive : ''}`}
+                >
+                  <span className={styles.navGroupLabel}>
+                    <GroupIcon />
+                    {group.title}
+                  </span>
+                </NavLink>
+              );
+            }
             return (
               <div key={group.title} className={styles.navGroupRow}>
                 <button
@@ -201,6 +254,11 @@ export function AppShell() {
       </aside>
       <main className={styles.main}>
         <div className={styles.topbar}>
+          {ocultarSidebar && (
+            <button type="button" className={styles.menuToggle} onClick={() => setMenuAbierto((v) => !v)} aria-label="Abrir menú" aria-expanded={menuAbierto}>
+              <Menu size={20} strokeWidth={ICON_STROKE_WIDTH} aria-hidden="true" />
+            </button>
+          )}
           {crumb && (
             <nav className={styles.crumb} aria-label="Ubicación">
               {crumb.group && (

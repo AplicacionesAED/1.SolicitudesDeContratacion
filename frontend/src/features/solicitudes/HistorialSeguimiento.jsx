@@ -31,8 +31,8 @@ function accionLabel(entry) {
 
 export function HistorialSeguimiento({ historial = [] }) {
   return (
-    <div className={styles.stepperCard}>
-      <h2 className={styles.stepperTitle}>Historial de Seguimiento</h2>
+    <div className={styles.section}>
+      <h2 className={styles.sectionTitle}>Historial de seguimiento</h2>
       {historial.length === 0 ? (
         <p style={{ color: 'var(--color-ink-muted)', fontSize: 'var(--text-data-size)', fontStyle: 'italic', margin: 0 }}>Sin registros en el historial.</p>
       ) : (

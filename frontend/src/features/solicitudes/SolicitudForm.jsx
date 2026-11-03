@@ -5,19 +5,18 @@
 // POST /upload -- Fase 8), sin el editor de tercero embebido (ya vive en
 // TerceroDetallePage, Fase 3).
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Circle } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { AlertTriangle, ArrowLeft, ArrowRight, Pencil } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { numeroALetras, categoriaSlug, tipoContratoLabel, formatCurrency, LIMITE_ORDEN_SERVICIO_DIRECTA } from '../../utils/solicitudes.js';
 import { listFrentes } from '../../api/frentes.js';
-import { listTerceros } from '../../api/terceros.js';
+import { listTerceros, updateTercero } from '../../api/terceros.js';
 import { createSolicitud, updateSolicitud, cambiarEstado, guardarCronograma, guardarCuadroComparativo, guardarMemoria, completarHistorico, importarHistorico } from '../../api/solicitudes.js';
 import { CronogramaBuilder } from './CronogramaBuilder.jsx';
 import { CuadroComparativoBuilder, normalizarCuadroComparativo, calcularTotalesProveedor } from './CuadroComparativoBuilder.jsx';
 import { MemoriaTablaEditor } from './MemoriaTablaEditor.jsx';
 import { OtrosisHistoricosBuilder, validarOtrosisHistoricos } from './OtrosisHistoricosBuilder.jsx';
 import { BackLink } from '../../components/ui/BackLink.jsx';
-import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, TextInput, Textarea } from '../../components/ui/Field.jsx';
 import { FileField } from '../../components/ui/FileField.jsx';
@@ -29,8 +28,6 @@ import f from './Formulario.module.css';
 // CLAUDE.md 2026-09-09 ("Formato de Solicitud restaurado"). Solo son texto
 // de ejemplo (placeholder), no defaults reales.
 const PLACEHOLDER_ALCANCE = 'Ej: Suministro e instalación de equipos de climatización en las torres A y B del proyecto...';
-const PLACEHOLDER_TERMINOS = 'Ej: El contratista deberá entregar planos en formato DWG y PDF, firmados por el ingeniero responsable...';
-const PLACEHOLDER_CONDICIONES = 'Ej: Confidencialidad, restricciones de acceso a la obra, entregables adicionales no incluidos en el objeto...';
 
 // "Datos del contratista" en Formato de Solicitud -- mismos 6 campos de
 // contacto que ya muestra SolicitudDetallePage.jsx (vienen del Tercero
@@ -45,6 +42,10 @@ const CAMPOS_CONTRATISTA = [
   ['Dirección representante', 'direccionRepresentante'],
   ['Teléfono representante', 'telefonoRepresentante'],
 ];
+
+// Campos del contratista que se editan acá mismo -- son de "contacto" en el backend (tercero.schema.js): los puede
+// editar cualquier usuario autenticado, sin el permiso 'editar_terceros'.
+const CAMPOS_EDITABLES_CONTRATISTA = ['nit', 'representanteLegal', 'cedulaRepresentante', 'correoFirma', 'direccionRepresentante', 'telefonoRepresentante'];
 
 const CONTRATANTE_NOMBRE = 'PROMOTORA BARLOVENTO DEL MAR S.A.S';
 const CONTRATANTE_NIT = '901307871';
@@ -124,6 +125,10 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
 
   const [frentes, setFrentes] = useState([]);
   const [terceros, setTerceros] = useState([]);
+  const [editandoTercero, setEditandoTercero] = useState(false);
+  const [terceroForm, setTerceroForm] = useState({});
+  const [guardandoTercero, setGuardandoTercero] = useState(false);
+  const [errorTercero, setErrorTercero] = useState(null);
 
   const [form, setForm] = useState({
     frentesIds: initialData?.frentesIds ?? [],
@@ -147,7 +152,6 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
     archivoCotizacion: initialData?.archivoCotizacion ?? '',
     archivoPreBEP: initialData?.archivoPreBEP ?? '',
   });
-  const [asuntoTocado, setAsuntoTocado] = useState(isEdit);
   const [cronograma, setCronograma] = useState(() =>
     initialData?.cronograma
       ? { tieneFases: initialData.cronograma.tieneFases, fechaInicio: initialData.cronograma.fechaInicio, fechaFin: initialData.cronograma.fechaFin, fases: initialData.cronograma.fases, actividades: initialData.cronograma.actividades.length > 0 ? initialData.cronograma.actividades : CRONOGRAMA_VACIO.actividades }
@@ -178,6 +182,8 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   const [errores, setErrores] = useState({});
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(null);
+  const [pasoKey, setPasoKey] = useState('frente');
+  const [visitados, setVisitados] = useState(() => new Set(['frente']));
 
   useEffect(() => {
     listFrentes().then((res) => {
@@ -199,7 +205,42 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
     listTerceros(true).then((res) => setTerceros(res.data));
   }, [usuario]);
 
+  useEffect(() => {
+    setVisitados((prev) => (prev.has(pasoKey) ? prev : new Set(prev).add(pasoKey)));
+  }, [pasoKey]);
+
+  useEffect(() => {
+    setEditandoTercero(false);
+    setErrorTercero(null);
+  }, [form.terceroId]);
+
+  function empezarEdicionTercero() {
+    setTerceroForm(Object.fromEntries(CAMPOS_EDITABLES_CONTRATISTA.map((c) => [c, terceroSeleccionado[c] ?? ''])));
+    setErrorTercero(null);
+    setEditandoTercero(true);
+  }
+
+  async function guardarTercero() {
+    setGuardandoTercero(true);
+    setErrorTercero(null);
+    try {
+      await updateTercero(terceroSeleccionado.id, Object.fromEntries(CAMPOS_EDITABLES_CONTRATISTA.map((c) => [c, terceroForm[c]?.trim() || null])));
+      const res = await listTerceros(true);
+      setTerceros(res.data);
+      setEditandoTercero(false);
+    } catch (err) {
+      setErrorTercero(err.message);
+    } finally {
+      setGuardandoTercero(false);
+    }
+  }
+
   const terceroSeleccionado = useMemo(() => terceros.find((t) => t.id === form.terceroId) ?? null, [terceros, form.terceroId]);
+
+  // Datos del contratista que aparecen "Sin información": para enviar tienen que estar todos (no aplica a un histórico).
+  const faltantesContratista = terceroSeleccionado && !esHistorico
+    ? CAMPOS_CONTRATISTA.filter(([, campo]) => !String(terceroSeleccionado[campo] ?? '').trim()).map(([label]) => label)
+    : [];
   // El filtrado por texto ahora vive DENTRO de <Combobox> (su propio query
   // interno) -- acá solo se restringe a los elegibles (debida diligencia +
   // confidencialidad, ver terceroSeleccionable arriba), un solo control en
@@ -231,12 +272,6 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   }, [cuadroComparativo]);
 
   const costoTotalCuadro = totalesCuadroSeleccionado?.costoTotal ?? 0;
-  // "Valor sin IVA" para el resumen (2026-10-20, pedido explícito) -- el
-  // Cuadro Comparativo solo cobra IVA sobre la Utilidad (AIU), nunca sobre el
-  // subtotal completo -- "sin IVA" es el costo total menos esa única
-  // porción, no una resta del 19% sobre todo. Mismas 2 cifras que ya
-  // desglosa la pestaña de cada proveedor en CuadroComparativoBuilder.jsx.
-  const valorSinIvaCuadro = totalesCuadroSeleccionado ? totalesCuadroSeleccionado.costoTotal - totalesCuadroSeleccionado.ivaUtilidad : 0;
 
   useEffect(() => {
     setForm((prev) => ({ ...prev, valorFinal: costoTotalCuadro > 0 ? String(Math.round(costoTotalCuadro)) : '' }));
@@ -271,8 +306,8 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   // por categoría (pedido explícito: "eso de OBRA no es necesario").
   const tiposContratoDisponibles = categoriaEfectiva === 'DIRECTA' ? ['TODO_COSTO', 'SUMINISTRO_MATERIALES', 'MANO_OBRA', 'SERVICIOS', 'TRANSPORTE', 'ALQUILER'] : ['OTROS_SERVICIOS', 'DISENO'];
 
+  // El asunto siempre se autogenera (ya no hay campo para editarlo): se recalcula al cambiar frente, contratista u objeto.
   useEffect(() => {
-    if (asuntoTocado) return;
     const nombresFrentes = frentesSeleccionados.map((f) => f.nombre).join(', ');
     const nombreTercero = terceroSeleccionado?.razonSocial ?? '';
     const desc = form.descripcionActividad.length > 80 ? `${form.descripcionActividad.slice(0, 80)}...` : form.descripcionActividad;
@@ -353,6 +388,7 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
     if (paraEnviar) {
       if (!form.terceroId) nuevos.terceroId = 'Selecciona un contratista';
       if (tratarComoContrato && !form.tipoContrato) nuevos.tipoContrato = 'Selecciona el tipo de contrato';
+      if (faltantesContratista.length > 0) nuevos.datosContratista = `Completa los datos del contratista para enviar: ${faltantesContratista.join(', ')}.`;
       if (form.descripcionActividad.trim().length < 50) nuevos.descripcionActividad = 'La descripción debe tener al menos 50 caracteres';
       if (!form.plazoEjecucion.trim()) nuevos.plazoEjecucion = 'El plazo de ejecución es obligatorio';
       if (!form.formaPago.trim()) nuevos.formaPago = 'La forma de pago es obligatoria';
@@ -416,18 +452,25 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
     // Mismo criterio que una solicitud normal -- "Guardar borrador"
     // (paraEnviar=false) valida laxo incluso para un histórico, "Importar"/
     // "Guardar y enviar" (paraEnviar=true) valida estricto.
-    if (!validar({ paraEnviar })) return;
+    if (!validar({ paraEnviar })) {
+      irAPrimerPendiente(paraEnviar);
+      return;
+    }
     // Mismo criterio que validar() -- el cronograma completo solo hace
     // falta para enviar, un borrador puede guardarse sin ninguna actividad
     // todavía.
     // Cronograma no aplica en Directa -- no hay UI para llenarlo, así que
     // tampoco se exige al enviar (ver el gate categoriaEfectiva === 'INDIRECTA'
     // de la sección más abajo).
-    if (paraEnviar && categoriaEfectiva === 'INDIRECTA' && !validarCronograma()) return;
+    if (paraEnviar && categoriaEfectiva === 'INDIRECTA' && !validarCronograma()) {
+      setPasoKey('cronograma');
+      return;
+    }
     if (paraEnviar && permiteOtrosisHistoricos) {
       const errs = validarOtrosisHistoricos(otrosisHistoricos);
       if (errs.length > 0) {
         setOtrosisHistoricosError(errs.join(' '));
+        setPasoKey('otrosis');
         return;
       }
       setOtrosisHistoricosError('');
@@ -503,7 +546,8 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   const requisitosEnvio = [
     { ok: form.frentesIds.length > 0, label: 'Frente(s) de trabajo', ancla: 'sec-frentes' },
     { ok: Boolean(form.terceroId), label: 'Contratista', ancla: 'sec-contratista' },
-    ...(tratarComoContrato ? [{ ok: Boolean(form.tipoContrato), label: 'Tipo de contrato', ancla: 'sec-info' }] : []),
+    { ok: faltantesContratista.length === 0, label: `Datos del contratista (${faltantesContratista.join(', ')})`, ancla: 'sec-contratista' },
+    ...(tratarComoContrato ? [{ ok: Boolean(form.tipoContrato), label: 'Tipo de contrato', ancla: 'sec-contratista' }] : []),
     { ok: form.descripcionActividad.trim().length >= 50, label: 'Objeto', detalle: `${Math.min(form.descripcionActividad.trim().length, 50)}/50 caracteres`, ancla: 'sec-info' },
     { ok: Boolean(form.plazoEjecucion.trim()), label: 'Plazo de ejecución', ancla: 'sec-info' },
     { ok: Boolean(form.formaPago.trim()), label: 'Forma de pago', ancla: 'sec-info' },
@@ -511,14 +555,49 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
     { ok: Boolean(form.archivoCotizacion.trim()), label: 'Cotización (PDF)', ancla: 'sec-docs' },
     ...(form.tipoContrato === 'DISENO' ? [{ ok: Boolean(form.archivoPreBEP.trim()), label: 'PreBEP (PDF)', ancla: 'sec-docs' }] : []),
     { ok: Boolean(form.asunto.trim()), label: 'Asunto', ancla: 'sec-asunto' },
-    { ok: Boolean(form.alcance.trim()), label: 'Alcance', ancla: 'sec-formato' },
+    { ok: Boolean(form.alcance.trim()), label: 'Alcance', ancla: 'sec-info' },
     ...(categoriaEfectiva === 'INDIRECTA' ? [{ ok: actividadesCronograma.length > 0 && actividadesCronograma.every((a) => a.descripcion.trim().length > 0), label: 'Cronograma', ancla: 'sec-cronograma' }] : []),
   ];
-  const completados = requisitosEnvio.filter((r) => r.ok).length;
-  const irA = (ancla) => document.getElementById(ancla)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // ---- Pasos (mismo patron que el wizard de crear empleado del HRMS). Todas las secciones siguen montadas, solo se oculta
+  // la de los pasos inactivos: asi ningun editor (memoria, cuadro, cronograma) pierde su estado al navegar. ----
+  const pasos = [
+    { key: 'frente', label: 'Frente(s) de trabajo' },
+    { key: 'contratista', label: 'Contratista' },
+    { key: 'info', label: 'Información' },
+    { key: 'docs', label: 'Documentos' },
+    { key: 'cuadro', label: 'Cuadro comparativo' },
+    ...(categoriaEfectiva === 'DIRECTA' ? [{ key: 'memoria', label: 'Memoria' }] : []),
+    ...(categoriaEfectiva === 'INDIRECTA' ? [{ key: 'cronograma', label: 'Cronograma' }] : []),
+    ...(permiteOtrosisHistoricos ? [{ key: 'otrosis', label: 'Otrosís históricos' }] : []),
+  ];
+  const PASO_DE_ANCLA = { 'sec-frentes': 'frente', 'sec-contratista': 'contratista', 'sec-info': 'info', 'sec-docs': 'docs', 'sec-cuadro': 'cuadro', 'sec-asunto': 'frente', 'sec-cronograma': 'cronograma' };
+  const pasoIdx = Math.max(0, pasos.findIndex((p) => p.key === pasoKey));
+  const esUltimoPaso = pasoIdx === pasos.length - 1;
+  // Que le falta a cada paso (mismos requisitos que exige "Guardar y enviar"). Un paso ya visitado sin todo lo requerido
+  // se marca con alerta en el stepper y se lista en un aviso; no bloquea nada (un borrador puede guardarse incompleto).
+  const pendientesPorPaso = Object.fromEntries(pasos.map((p) => [p.key, requisitosEnvio.filter((r) => !r.ok && PASO_DE_ANCLA[r.ancla] === p.key).map((r) => r.label)]));
+  // "Ya pasado" = cualquier paso hasta el mas lejano al que se llego (aunque se haya saltado con el stepper), no solo los tocados.
+  const masLejano = Math.max(0, ...pasos.map((p, i) => (visitados.has(p.key) ? i : 0)));
+  const estadoPaso = (p, i) => (i === pasoIdx ? 'actual' : i < masLejano || visitados.has(p.key) ? (pendientesPorPaso[p.key].length > 0 ? 'alerta' : 'ok') : 'pendiente');
+  const pasosConAlerta = pasos.filter((p, i) => estadoPaso(p, i) === 'alerta');
+  const irAPaso = (key) => {
+    setPasoKey(key);
+    setTimeout(() => document.getElementById('form-stepper')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  };
+  const irA = (ancla) => {
+    setPasoKey(PASO_DE_ANCLA[ancla] ?? 'frente');
+    setTimeout(() => document.getElementById(ancla)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  };
+  // Al fallar la validacion, lleva al primer paso con algo pendiente (un borrador solo exige el frente).
+  function irAPrimerPendiente(paraEnviar) {
+    const pendiente = paraEnviar ? requisitosEnvio.find((r) => !r.ok) : requisitosEnvio[0];
+    if (pendiente) irA(pendiente.ancla);
+    else if (superaTopeOrdenServicio) setPasoKey('cuadro');
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+    <div className={f.root} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
       <BackLink to={`/solicitudes-${categoriaSlug(categoriaEfectiva)}`}>Solicitudes</BackLink>
       <h1 className={styles.title}>
         {esHistorico ? (isEdit ? 'Editar borrador histórico — ' : 'Importar ') : isEdit ? 'Editar ' : ''}{tipoSolicitud === 'ORDEN_SERVICIO' ? 'Orden de Servicio' : 'Solicitud de Contrato'}
@@ -533,18 +612,52 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
 
       {error && <p className={styles.errorBanner}>{error}</p>}
 
-      <div className={f.layout}>
+      <ol id="form-stepper" className={f.stepper} aria-label="Pasos del formulario">
+        {pasos.map((p, i) => {
+          const estado = estadoPaso(p, i);
+          return (
+            <li
+              key={p.key}
+              className={`${f.stepperItem} ${estado === 'ok' ? f.stepperDone : ''} ${estado === 'actual' ? f.stepperCurrent : ''} ${estado === 'alerta' ? f.stepperAlerta : ''}`}
+              aria-current={estado === 'actual' ? 'step' : undefined}
+            >
+              <button type="button" className={f.stepperBtn} onClick={() => irAPaso(p.key)} title={estado === 'alerta' ? `Falta: ${pendientesPorPaso[p.key].join(', ')}` : undefined}>
+                <span className={f.stepperDot}>{estado === 'ok' ? '✓' : estado === 'alerta' ? '!' : i + 1}</span>
+                <span className={f.stepperLabel} title={p.label}>{p.label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      {pasosConAlerta.length > 0 && (
+        <div className={f.alerta} role="alert">
+          <AlertTriangle size={18} aria-hidden="true" />
+          <div>
+            <strong>Aún falta información</strong>
+            <ul>
+              {pasosConAlerta.map((p) => (
+                <li key={p.key}>
+                  <button type="button" onClick={() => irAPaso(p.key)}>{p.label}</button>: {pendientesPorPaso[p.key].join(', ')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       <div className={f.main}>
+      <div className={f.panel} hidden={pasoKey !== 'frente'}>
       <div id="sec-frentes" className={styles.section}>
         <h2 className={styles.sectionTitle}>Frente(s) de trabajo</h2>
         {grupos.map((g) => (
           <div key={g.etapa ?? 'sin-etapa'}>
             <p style={{ fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)', margin: '0 0 6px' }}>{g.etapa != null ? `Etapa ${g.etapa}` : 'Sin etapa'}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
-              {g.frentes.map((f) => (
-                <label key={f.id} style={{ display: 'flex', gap: 6, alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px' }}>
-                  <input type="checkbox" checked={form.frentesIds.includes(f.id)} onChange={() => toggleFrente(f.id)} />
-                  {f.nombre} <span style={{ color: 'var(--color-ink-muted)', fontSize: 'var(--text-label-size)' }}>({f.proyecto?.nombre})</span>
+            <div className={f.opciones}>
+              {g.frentes.map((fr) => (
+                <label key={fr.id} className={`${f.opcion} ${form.frentesIds.includes(fr.id) ? f.opcionActiva : ''}`}>
+                  <input type="checkbox" checked={form.frentesIds.includes(fr.id)} onChange={() => toggleFrente(fr.id)} />
+                  {fr.nombre} <span style={{ color: 'var(--color-ink-muted)', fontSize: 'var(--text-label-size)', fontWeight: 400 }}>({fr.proyecto?.nombre})</span>
                 </label>
               ))}
             </div>
@@ -553,22 +666,27 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
         {errores.frentesIds && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.frentesIds}</p>}
       </div>
 
+      </div>
+      <div className={f.panel} hidden={pasoKey !== 'contratista'}>
       <div id="sec-contratista" className={styles.section}>
         <h2 className={styles.sectionTitle}>Contratista</h2>
-        <Combobox
-          options={terceroOpciones}
-          value={form.terceroId || ''}
-          onChange={(id) => setForm({ ...form, terceroId: id })}
-          placeholder="Buscar contratista aprobado..."
-          emptyMessage="Sin contratistas que coincidan."
-          invalid={Boolean(errores.terceroId)}
-        />
-        {errores.terceroId && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.terceroId}</p>}
+        <div className={f.bloque}>
+          <p className={f.bloqueTitulo}>Seleccionar contratista</p>
+          <Combobox
+            options={terceroOpciones}
+            value={form.terceroId || ''}
+            onChange={(id) => setForm({ ...form, terceroId: id })}
+            placeholder="Buscar contratista aprobado..."
+            emptyMessage="Sin contratistas que coincidan."
+            invalid={Boolean(errores.terceroId)}
+          />
+          {errores.terceroId && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.terceroId}</p>}
+        </div>
 
         {tratarComoContrato && (
-          <div>
-            <p style={{ fontSize: 'var(--text-label-size)', fontWeight: 600, margin: 'var(--space-sm) 0 6px' }}>Tipo de contrato</p>
-            <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
+          <div className={f.bloque}>
+            <p className={f.bloqueTitulo}>Tipo de contrato</p>
+            <div className={f.opciones}>
               {/* Pedido explícito del usuario: "en los contratos directos no
                   existen los contratos de tipo Diseño" -- Diseño solo aplica
                   a Indirecta. Esta sección ahora también se muestra para
@@ -579,7 +697,7 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
                   `TRANSPORTE`/`ALQUILER`); igual exige clic explícito. Los
                   códigos vienen de tiposContratoDisponibles (arriba). */}
               {tiposContratoDisponibles.map((opt) => (
-                <label key={opt} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <label key={opt} className={`${f.opcion} ${form.tipoContrato === opt ? f.opcionActiva : ''}`}>
                   <input type="radio" checked={form.tipoContrato === opt} onChange={() => setForm({ ...form, tipoContrato: opt })} />
                   {tipoContratoLabel(opt)}
                 </label>
@@ -588,8 +706,57 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
             {errores.tipoContrato && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.tipoContrato}</p>}
           </div>
         )}
+
+        {terceroSeleccionado && (
+          <div className={f.bloque}>
+            <p className={f.bloqueTitulo}>Datos del contratista</p>
+            <div className={`${f.datosCard} ${editandoTercero ? f.datosEditando : ''}`}>
+              <div className={f.datosHead}>
+                <span className={f.datosAvatar} aria-hidden="true">{(terceroSeleccionado.razonSocial || '?').trim().charAt(0).toUpperCase()}</span>
+                <div className={f.datosNombre}>
+                  <strong>{terceroSeleccionado.razonSocial || 'Sin razón social'}</strong>
+                  <span>NIT {terceroSeleccionado.nit || 'sin información'}</span>
+                </div>
+                {!editandoTercero && (
+                  <button type="button" className={f.datosEditar} onClick={empezarEdicionTercero}>
+                    <Pencil size={14} aria-hidden="true" /> Editar datos
+                  </button>
+                )}
+              </div>
+              {editandoTercero ? (
+                <>
+                  <p className={f.datosAviso}>Los cambios se guardan en la ficha del contratista y aplican a todas sus solicitudes.</p>
+                  <div className={f.datosGrid}>
+                    {[['NIT', 'nit'], ...CAMPOS_CONTRATISTA.filter(([, campo]) => campo !== 'razonSocial' && campo !== 'nit')].map(([label, campo]) => (
+                      <Field key={campo} label={label}>
+                        {(p) => <TextInput {...p} type={campo === 'correoFirma' ? 'email' : 'text'} value={terceroForm[campo] ?? ''} onChange={(e) => setTerceroForm({ ...terceroForm, [campo]: e.target.value })} />}
+                      </Field>
+                    ))}
+                  </div>
+                  {errorTercero && <p className={styles.errorBanner}>{errorTercero}</p>}
+                  <div className={f.datosAcciones}>
+                    <Button type="button" variant="secondary" onClick={() => setEditandoTercero(false)} disabled={guardandoTercero}>Cancelar</Button>
+                    <Button type="button" onClick={guardarTercero} disabled={guardandoTercero}>{guardandoTercero ? 'Guardando…' : 'Guardar datos'}</Button>
+                  </div>
+                </>
+              ) : (
+                <dl className={f.datosGrid}>
+                  {CAMPOS_CONTRATISTA.filter(([, campo]) => campo !== 'razonSocial' && campo !== 'nit').map(([label, campo]) => (
+                    <div key={campo} className={f.dato}>
+                      <dt>{label}</dt>
+                      <dd>{terceroSeleccionado[campo] || <em>Sin información</em>}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+            {errores.datosContratista && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.datosContratista}</p>}
+          </div>
+        )}
       </div>
 
+      </div>
+      <div className={f.panel} hidden={pasoKey !== 'info'}>
       <div id="sec-info" className={styles.section}>
         <h2 className={styles.sectionTitle}>Información del formulario</h2>
         <Field label="Objeto" required error={errores.descripcionActividad} helper="Mínimo 50 caracteres">
@@ -607,8 +774,13 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
             {(p) => <Textarea {...p} rows={1} value={form.formaPago} onChange={(e) => setForm({ ...form, formaPago: e.target.value })} placeholder="Ej: 50% anticipo, 50% a la entrega" />}
           </Field>
         </div>
+        <Field label="Alcance">
+          {(p) => <Textarea {...p} rows={2} value={form.alcance} onChange={(e) => setForm({ ...form, alcance: e.target.value })} placeholder={PLACEHOLDER_ALCANCE} />}
+        </Field>
       </div>
 
+      </div>
+      <div className={f.panel} hidden={pasoKey !== 'docs'}>
       <div id="sec-docs" className={styles.section}>
         <h2 className={styles.sectionTitle}>Documentos requeridos</h2>
         <Field label="Cotización" required error={errores.archivoCotizacion}>
@@ -621,6 +793,8 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
         )}
       </div>
 
+      </div>
+      <div className={f.panel} hidden={pasoKey !== 'cuadro'}>
       <div id="sec-cuadro" className={styles.section}>
         <h2 className={styles.sectionTitle}>Cuadro Comparativo</h2>
         {/* "En Directos no se puede agregar más de un proveedor, debe ser
@@ -643,6 +817,8 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
         {superaTopeOrdenServicio && <p className={styles.errorBanner} style={{ marginTop: 8 }}>{mensajeTopeOrdenServicio}</p>}
       </div>
 
+      </div>
+      <div className={f.panel} hidden={pasoKey !== 'memoria'}>
       {/* Solo Solicitudes Directas por ahora (pedido explícito del
           usuario) -- opcional, no bloquea Enviar. */}
       {categoriaEfectiva === 'DIRECTA' && (
@@ -660,108 +836,8 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
           el detalle de la solicitud (SolicitudDetallePage.jsx) lo sigue
           mostrando exactamente igual que antes, sin cambios ahí. */}
 
-      <div id="sec-asunto" className={styles.section}>
-        <h2 className={styles.sectionTitle}>Asunto</h2>
-        <Field label="Asunto" required error={errores.asunto} helper="Se autogenera al cambiar frente/contratista/descripción; puedes editarlo.">
-          {(p) => <Textarea {...p} rows={2} value={form.asunto} onChange={(e) => { setAsuntoTocado(true); setForm({ ...form, asunto: e.target.value }); }} />}
-        </Field>
       </div>
-
-      {/* "Formato de Solicitud" -- restaurado tal cual se veía en la app
-          original (ver CLAUDE.md 2026-09-09), reemplaza a lo que era
-          "Detalle adicional (opcional)" acá. Resumen de solo lectura
-          (Área/frente, Solicitante, Proyecto, Tipo, Contratante, Datos del
-          contratista, Objeto) + los 3 campos SÍ editables (Alcance/
-          Términos de referencia/Condiciones especiales, ahora con el mismo
-          texto de ejemplo que traía el original). Nombre/NIT del
-          contratante siguen siendo el mismo valor fijo de siempre
-          (CONTRATANTE_NOMBRE/CONTRATANTE_NIT) -- acá solo se hacen
-          visibles (de solo lectura), no editables, pedido explícito del
-          usuario de no cambiar ese comportamiento. */}
-      <div id="sec-formato" className={styles.section}>
-        <h2 className={styles.sectionTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          Formato de Solicitud
-          <Badge variant="info">Opcional</Badge>
-        </h2>
-
-        <div className={styles.infoGrid}>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Área / frente</span>
-            <span className={styles.infoValue}>{frentesSeleccionados.map((f) => f.nombre).join(', ') || '—'}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Solicitante</span>
-            <span className={styles.infoValue}>
-              {usuario.nombre}
-              {usuario.cargo && <><br /><span style={{ fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)' }}>{usuario.cargo}</span></>}
-            </span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Proyecto</span>
-            <span className={styles.infoValue}>{frentesSeleccionados[0]?.proyecto?.nombre || '—'}</span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Tipo</span>
-            <span className={styles.infoValue}>{tratarComoContrato && form.tipoContrato ? tipoContratoLabel(form.tipoContrato) : '—'}</span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
-          <Field className="fieldMd" label="Nombre del contratante">
-            {(p) => <TextInput {...p} value={CONTRATANTE_NOMBRE} disabled />}
-          </Field>
-          <Field className="fieldMd" label="NIT del contratante">
-            {(p) => <TextInput {...p} value={CONTRATANTE_NIT} disabled />}
-          </Field>
-        </div>
-
-        {terceroSeleccionado && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontWeight: 600, margin: 0, fontSize: 'var(--text-body-size)' }}>Datos del contratista</p>
-              <Link to={`/terceros/${terceroSeleccionado.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 'var(--text-data-size)', color: 'var(--color-primary)' }}>
-                Editar datos
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-sm) var(--space-lg)', fontSize: 'var(--text-data-size)' }}>
-              {CAMPOS_CONTRATISTA.map(([label, campo]) => (
-                <p key={campo} style={{ margin: 0 }}>
-                  <strong>{label}:</strong> {terceroSeleccionado[campo] || <em style={{ color: 'var(--color-ink-muted)' }}>Sin información</em>}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* rows={2} + de a 2 por fila (pedido explícito) -- crecen solos
-            si el contenido no entra en 2 líneas (Field.jsx#Textarea). */}
-        <div className={styles.fieldRow}>
-          <Field className="fieldMd" label="Objeto" helper="Se completa automáticamente con el Objeto de arriba.">
-            {(p) => <Textarea {...p} rows={2} value={form.descripcionActividad} disabled placeholder="Se completará con el objeto." />}
-          </Field>
-          <Field className="fieldMd" label="Alcance">
-            {(p) => <Textarea {...p} rows={2} value={form.alcance} onChange={(e) => setForm({ ...form, alcance: e.target.value })} placeholder={PLACEHOLDER_ALCANCE} />}
-          </Field>
-        </div>
-        {/* "No aplica en directos" -- pedido explícito del usuario
-            (2026-09-21). Solo Indirecta las muestra; buildPayload() ya
-            fuerza `null` para Directa. */}
-        {categoriaEfectiva === 'INDIRECTA' && (
-          <div className={styles.fieldRow}>
-            <Field className="fieldMd" label="Términos de referencia">
-              {(p) => <Textarea {...p} rows={2} value={form.terminosReferencia} onChange={(e) => setForm({ ...form, terminosReferencia: e.target.value })} placeholder={PLACEHOLDER_TERMINOS} />}
-            </Field>
-            <Field className="fieldMd" label="Condiciones especiales">
-              {(p) => <Textarea {...p} rows={2} value={form.condicionesEspeciales} onChange={(e) => setForm({ ...form, condicionesEspeciales: e.target.value })} placeholder={PLACEHOLDER_CONDICIONES} />}
-            </Field>
-          </div>
-        )}
-      </div>
-
-      {/* "Cronograma no aplica en directos" -- pedido explícito del usuario
-          (2026-09-21). El "Plazo de entrega" del PDF de Orden de Servicio ya
-          cae a `plazo_ejecucion` (texto libre, siempre obligatorio) cuando
-          no hay cronograma -- ver ordenServicio.js. */}
+      <div className={f.panel} hidden={pasoKey !== 'cronograma'}>
       {categoriaEfectiva === 'INDIRECTA' && (
         <div id="sec-cronograma" className={styles.section}>
           <h2 className={styles.sectionTitle}>Cronograma</h2>
@@ -778,6 +854,8 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
           crea recién al hacer clic en "Importar" (ver guardar() más arriba)
           -- un otrosí histórico exige un padre ya COMPLETADA, que este
           contrato todavía no es mientras sigue en borrador. */}
+      </div>
+      <div className={f.panel} hidden={pasoKey !== 'otrosis'}>
       {permiteOtrosisHistoricos && (
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Otrosís históricos</h2>
@@ -789,7 +867,13 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-lg)' }}>
+      </div>
+
+      <div className={f.pie}>
+        <Button type="button" variant="secondary" onClick={() => irAPaso(pasos[pasoIdx - 1].key)} disabled={pasoIdx === 0 || guardando != null}>
+          <ArrowLeft size={16} aria-hidden="true" /> Anterior
+        </Button>
+        <div className={f.pieAcciones}>
         {esHistorico ? (
           // Un histórico siempre ofrece las dos acciones, tanto al crear
           // como al volver a editar un borrador ya guardado -- "Importar"
@@ -799,64 +883,31 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
             <Button type="button" variant="secondary" onClick={() => guardar(false)} disabled={guardando != null}>
               {guardando === 'borrador' ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar borrador'}
             </Button>
-            <Button type="button" onClick={() => guardar(true)} disabled={guardando != null}>
-              {guardando === 'importar' ? 'Importando…' : 'Importar'}
-            </Button>
+            {esUltimoPaso && (
+              <Button type="button" onClick={() => guardar(true)} disabled={guardando != null}>
+                {guardando === 'importar' ? 'Importando…' : 'Importar'}
+              </Button>
+            )}
           </>
         ) : (
           <>
             <Button type="button" variant={isEdit ? 'primary' : 'secondary'} onClick={() => guardar(false)} disabled={guardando != null}>
               {guardando === 'borrador' ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar borrador'}
             </Button>
-            {!isEdit && (
+            {!isEdit && esUltimoPaso && (
               <Button type="button" onClick={() => guardar(true)} disabled={guardando != null}>
                 {guardando === 'enviar' ? 'Enviando…' : 'Guardar y enviar'}
               </Button>
             )}
           </>
         )}
-      </div>
-      </div>
-
-      <aside className={f.aside} aria-label="Avance del formulario">
-        <div className={f.card}>
-          <div className={f.cardHead}>
-            <h2 className={f.cardTitle}>{esHistorico ? 'Para importar' : 'Para enviar'}</h2>
-            <span className={f.contador}>{completados}/{requisitosEnvio.length}</span>
-          </div>
-          <div className={f.barra} aria-hidden="true">
-            <div className={f.barraRelleno} style={{ width: `${Math.round((completados / requisitosEnvio.length) * 100)}%` }} />
-          </div>
-          <p className={f.ayuda}>Para guardar un borrador solo hace falta el frente.</p>
-          <ul className={f.lista}>
-            {requisitosEnvio.map((r) => (
-              <li key={r.label}>
-                <button type="button" className={f.item} onClick={() => irA(r.ancla)}>
-                  {r.ok ? <CheckCircle2 size={16} className={f.ok} aria-hidden="true" /> : <Circle size={16} className={f.falta} aria-hidden="true" />}
-                  <span className={r.ok ? f.itemOk : ''}>{r.label}</span>
-                  {!r.ok && r.detalle && <span className={f.detalle}>{r.detalle}</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
+        {!esUltimoPaso && (
+          <Button type="button" onClick={() => irAPaso(pasos[pasoIdx + 1].key)} disabled={guardando != null}>
+            Siguiente <ArrowRight size={16} aria-hidden="true" />
+          </Button>
+        )}
         </div>
-
-        <div className={f.card}>
-          <h2 className={f.cardTitle}>Resumen</h2>
-          <dl className={f.resumen}>
-            <div><dt>Contratista</dt><dd>{terceroSeleccionado?.razonSocial ?? '—'}</dd></div>
-            <div><dt>Frente(s)</dt><dd>{frentesSeleccionados.map((fr) => fr.nombre).join(', ') || '—'}</dd></div>
-            {/* "Que salgan los valores con IVA y sin IVA" -- pedido
-                explícito del usuario (2026-10-20). "Sin IVA" = el costo
-                total menos el IVA sobre la Utilidad (ver
-                valorSinIvaCuadro más arriba) -- el Cuadro Comparativo nunca
-                cobra IVA sobre el subtotal completo, solo sobre esa
-                porción. */}
-            <div><dt>Valor sin IVA</dt><dd>{costoTotalCuadro > 0 ? formatCurrency(Math.round(valorSinIvaCuadro)) : '—'}</dd></div>
-            <div><dt>Valor con IVA</dt><dd>{costoTotalCuadro > 0 ? formatCurrency(Math.round(costoTotalCuadro)) : '—'}</dd></div>
-          </dl>
-        </div>
-      </aside>
+      </div>
       </div>
     </div>
   );

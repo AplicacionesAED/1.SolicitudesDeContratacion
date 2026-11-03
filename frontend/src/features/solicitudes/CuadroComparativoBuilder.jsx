@@ -276,7 +276,11 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+    <div className={styles.cuadro}>
+      <div className={styles.cuadroLeyenda} aria-hidden="true">
+        <span className={styles.leyendaItem}><span className={styles.leyendaMuestra} /> Campo editable</span>
+        <span className={`${styles.leyendaItem}`}><span className={`${styles.leyendaMuestra} ${styles.leyendaMuestraRo}`} /> Calculado o solo lectura</span>
+      </div>
       {/* 1. Ítems -- fijo, no crece con el número de proveedores. */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
         <p style={{ fontSize: 'var(--text-body-size)', fontWeight: 500, margin: 0 }}>Ítems a comparar</p>
@@ -319,9 +323,9 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
             <tbody>
               {items.map((it, idx) => (
                 <tr key={idx}>
-                  <td><input type="text" className={styles.celdaInput} value={it.codigoItem} onChange={(e) => updateItem(idx, 'codigoItem', e.target.value)} style={inputCellStyle()} /></td>
-                  <td><input type="text" className={styles.celdaInput} value={it.codigoInsumo} onChange={(e) => updateItem(idx, 'codigoInsumo', e.target.value)} style={inputCellStyle()} /></td>
-                  <td><CeldaTextoLargo value={it.actividad} onChange={(e) => updateItem(idx, 'actividad', e.target.value)} placeholder="Actividad o insumo" /></td>
+                  <td><CeldaTextoLargo value={it.codigoItem} onChange={(e) => updateItem(idx, 'codigoItem', e.target.value)} /></td>
+                  <td><CeldaTextoLargo value={it.codigoInsumo} onChange={(e) => updateItem(idx, 'codigoInsumo', e.target.value)} /></td>
+                  <td><CeldaTextoLargo value={it.actividad} onChange={(e) => updateItem(idx, 'actividad', e.target.value)} /></td>
                   <td><CeldaTextoLargo value={it.alcance} onChange={(e) => updateItem(idx, 'alcance', e.target.value)} /></td>
                   <td>
                     <select
@@ -336,7 +340,7 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
                       ))}
                     </select>
                   </td>
-                  <td><input type="number" className={styles.celdaInput} value={it.cantidad} onChange={(e) => updateItem(idx, 'cantidad', e.target.value)} style={inputCellStyle()} /></td>
+                  <td><input type="number" className={`${styles.celdaInput} ${styles.celdaNum}`} value={it.cantidad} onChange={(e) => updateItem(idx, 'cantidad', e.target.value)} style={inputCellStyle()} /></td>
                   <td>
                     {/* Dinero -- nunca type="number" (mismo motivo que
                         "Valor unitario" de la tabla de precios por
@@ -344,13 +348,13 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
                     <input
                       type="text"
                       inputMode="numeric"
-                      className={styles.celdaInput}
+                      className={`${styles.celdaInput} ${styles.celdaNum}`}
                       value={formatearMiles(it.valorUnitarioPendiente)}
                       onChange={(e) => updateItem(idx, 'valorUnitarioPendiente', soloDigitos(e.target.value))}
                       style={inputCellStyle()}
                     />
                   </td>
-                  <td style={{ color: 'var(--color-ink-muted)' }}>{formatCurrency(calcularValorTotalPendiente(it))}</td>
+                  <td className={`${styles.celdaCalc} ${styles.celdaNum}`}>{formatCurrency(calcularValorTotalPendiente(it))}</td>
                   <td><CeldaTextoLargo value={it.observaciones} onChange={(e) => updateItem(idx, 'observaciones', e.target.value)} /></td>
                   <td>
                     <button type="button" className={styles.deleteRowButton} onClick={() => quitarItem(idx)} title="Quitar ítem" aria-label="Quitar ítem">
@@ -421,14 +425,14 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
             <tbody>
               {items.map((it, idx) => (
                 <tr key={idx}>
-                  <td>{it.codigoItem}</td>
-                  <td>{it.codigoInsumo}</td>
-                  <td>{it.actividad}</td>
-                  <td>{it.alcance}</td>
-                  <td>{it.unidad}</td>
-                  <td><input type="number" className={styles.celdaInput} value={it.cantidadReal} onChange={(e) => updateItem(idx, 'cantidadReal', e.target.value)} style={inputCellStyle()} /></td>
-                  <td style={{ color: 'var(--color-ink-muted)' }}>{formatCurrency(calcularValorTotalSegunPpto(it))}</td>
-                  <td>{it.observaciones}</td>
+                  <td className={styles.celdaCalc}>{it.codigoItem}</td>
+                  <td className={styles.celdaCalc}>{it.codigoInsumo}</td>
+                  <td className={styles.celdaCalc}>{it.actividad}</td>
+                  <td className={styles.celdaCalc}>{it.alcance}</td>
+                  <td className={styles.celdaCalc}>{it.unidad}</td>
+                  <td><input type="number" className={`${styles.celdaInput} ${styles.celdaNum}`} value={it.cantidadReal} onChange={(e) => updateItem(idx, 'cantidadReal', e.target.value)} style={inputCellStyle()} /></td>
+                  <td className={`${styles.celdaCalc} ${styles.celdaNum}`}>{formatCurrency(calcularValorTotalSegunPpto(it))}</td>
+                  <td className={styles.celdaCalc}>{it.observaciones}</td>
                   <td>
                     <button type="button" className={styles.deleteRowButton} onClick={() => quitarItem(idx)} title="Quitar ítem" aria-label="Quitar ítem">
                       <Trash2 size={14} />
@@ -485,7 +489,7 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
                     cursor: 'pointer',
                     border: p.seleccionado ? '2px solid var(--color-success-ink)' : activa ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
                     borderRadius: 'var(--radius-md)',
-                    padding: 'var(--space-md)',
+                    padding: 'var(--space-sm) var(--space-md)',
                     background: p.seleccionado ? 'var(--color-success-surface)' : 'var(--color-surface)',
                     fontFamily: 'inherit',
                   }}
@@ -494,7 +498,7 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
                     <strong style={{ fontSize: 'var(--text-body-size)' }}>{p.nombre || 'Proveedor sin nombre'}</strong>
                     {p.seleccionado && <Badge variant="success">Seleccionado</Badge>}
                   </div>
-                  <p style={{ margin: '8px 0 0', fontSize: 'var(--text-title-size)', fontWeight: 700, color: 'var(--color-ink)' }}>{formatCurrency(totales.costoTotal)}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: 'var(--text-title-size)', fontWeight: 700, color: 'var(--color-ink)' }}>{formatCurrency(totales.costoTotal)}</p>
                   <p style={{ margin: 0, fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)' }}>Subtotal {formatCurrency(totales.subtotal)}</p>
                 </button>
               );
@@ -575,14 +579,14 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
                 <tbody>
                   {items.map((it, idx) => (
                     <tr key={idx}>
-                      <td>
+                      <td className={styles.celdaCalc}>
                         {it.actividad || <em style={{ color: 'var(--color-ink-muted)' }}>Sin actividad</em>}
                         {it.alcance && <><br /><span style={{ fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)' }}>{it.alcance}</span></>}
                       </td>
                       {/* Cantidad Real (la que se compra/contrata), no
                           Pendiente por consumir -- coherente con
                           calcularValorTotalItem, que ya usa cantidadReal. */}
-                      <td>{it.cantidadReal || 0} {it.unidad}</td>
+                      <td className={`${styles.celdaCalc} ${styles.celdaNum}`}>{it.cantidadReal || 0} {it.unidad}</td>
                       <td>
                         {/* Valor unitario es dinero -- NUNCA type="number":
                             un input numérico interpreta el primer "." como
@@ -598,13 +602,13 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
                         <input
                           type="text"
                           inputMode="numeric"
-                          className={styles.celdaInput}
+                          className={`${styles.celdaInput} ${styles.celdaNum}`}
                           value={formatearMiles(it.precios?.[proveedorActivo.clientId])}
                           onChange={(e) => updatePrecio(idx, proveedorActivo.clientId, soloDigitos(e.target.value))}
                           style={inputCellStyle()}
                         />
                       </td>
-                      <td style={{ color: 'var(--color-ink-muted)' }}>{formatCurrency(calcularValorTotalItem(it, proveedorActivo.clientId))}</td>
+                      <td className={`${styles.celdaCalc} ${styles.celdaNum}`}>{formatCurrency(calcularValorTotalItem(it, proveedorActivo.clientId))}</td>
                     </tr>
                   ))}
                   {items.length === 0 && (

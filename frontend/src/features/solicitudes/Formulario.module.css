@@ -1,9 +1,15 @@
-/* Formulario de solicitud (rediseno 2026-10-09): secciones a la izquierda, avance y resumen fijos a la derecha. */
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: var(--space-lg);
-  align-items: start;
+/* Formulario de solicitud: secciones apiladas, una por paso.
+   `.root` ajusta tokens SOLO dentro del formulario (no toca el resto de la app): tarjetas blancas sobre el fondo
+   tintado y un borde de campo con contraste >= 3:1 contra el fondo (WCAG 1.4.11). Los inputs de Field/Combobox/FileField
+   ya leen estos tokens. */
+.root {
+  --color-surface: #fff;
+  --color-border-input: color-mix(in srgb, var(--color-primary) 55%, white);
+}
+
+/* Cada seccion de un paso es hija directa del panel (clase `section` de otro modulo: se alcanza por posicion). */
+.panel > div {
+  border-color: var(--color-border-strong);
 }
 
 .main {
@@ -11,141 +17,6 @@
   flex-direction: column;
   gap: var(--space-lg);
   min-width: 0;
-}
-
-.aside {
-  position: sticky;
-  top: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.cardHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.cardTitle {
-  margin: 0;
-  font-size: var(--text-body-size);
-  font-weight: 600;
-}
-
-.contador {
-  font-size: var(--text-data-size);
-  font-weight: 600;
-  color: var(--color-ink-secondary);
-}
-
-.barra {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-surface-sunken);
-  overflow: hidden;
-}
-
-.barraRelleno {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 3px;
-  transition: width 200ms ease;
-}
-
-.ayuda {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-ink-muted);
-}
-
-.lista {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 4px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--text-data-size);
-  text-align: left;
-  color: var(--color-ink);
-  border-radius: var(--radius-sm);
-}
-
-.item:hover {
-  background: var(--color-surface-hover);
-}
-
-.itemOk {
-  color: var(--color-ink-muted);
-}
-
-.ok {
-  flex: none;
-  color: var(--color-success-ink);
-}
-
-.falta {
-  flex: none;
-  color: var(--color-ink-muted);
-}
-
-.detalle {
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--color-warning-ink);
-}
-
-.resumen {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.resumen dt {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-ink-muted);
-}
-
-.resumen dd {
-  margin: 2px 0 0;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 1100px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .aside {
-    position: static;
-    order: -1;
-  }
 }
 
 /* Otrosi: indicador de pasos. */
@@ -195,4 +66,320 @@
 .pasoHecho .pasoNum {
   background: var(--color-success-surface);
   color: var(--color-success-ink);
+}
+
+/* Formulario por pasos (mismo patron que el wizard "Crear empleado" del HRMS). */
+.stepper {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.stepperItem {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.stepperBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-ink-secondary);
+  font: inherit;
+  font-size: var(--text-data-size);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+
+.stepperBtn:hover {
+  background: var(--color-surface-hover);
+}
+
+.stepperDot {
+  flex: 0 0 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-ink-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stepperLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepperDone .stepperDot {
+  background: var(--color-success-ink);
+  border-color: var(--color-success-ink);
+  color: #fff;
+}
+
+.stepperCurrent .stepperBtn {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.stepperCurrent .stepperDot {
+  background: #fff;
+  border-color: #fff;
+  color: var(--color-primary);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.pie {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.pieAcciones {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* Paso Contratista: bloques, opciones de tipo de contrato y tarjeta de datos. */
+.bloque {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.bloqueTitulo {
+  margin: 0;
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-sm);
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--text-data-size);
+  cursor: pointer;
+  accent-color: var(--color-primary);
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+
+.opcion:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-hover);
+}
+
+.opcionActiva {
+  border-color: var(--color-primary);
+  background: var(--color-info-surface);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+  font-weight: 600;
+}
+
+.datosCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+.datosHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.datosAvatar {
+  flex: 0 0 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.datosNombre {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.datosNombre span {
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+.datosEditar {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.datosEditar:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+}
+
+.datosAcciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.datosGrid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md) var(--space-lg);
+}
+
+.dato dt {
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.dato dd {
+  margin: 2px 0 0;
+  font-size: var(--text-body-size);
+  overflow-wrap: anywhere;
+}
+
+.dato em {
+  color: var(--color-danger-ink);
+  font-weight: 600;
+}
+
+/* Tarjeta de datos del contratista en modo edicion: pasa a un fondo claro con borde de marca y los campos en blanco,
+   para que se lean como cajas a llenar (en modo lectura el fondo tintado es el que marca que no se escribe). */
+.datosEditando {
+  --color-surface-sunken: #fff;
+  background: color-mix(in srgb, var(--color-primary) 4%, white);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.datosAviso {
+  margin: 0;
+  font-size: var(--text-data-size);
+  color: var(--color-ink-secondary);
+}
+
+.datosEditando .datosAcciones {
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-strong);
+}
+
+/* Paso ya visitado al que le falta informacion: alerta (no bloquea). */
+.stepperAlerta .stepperBtn {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-ink);
+  color: var(--color-warning-ink);
+  font-weight: 600;
+}
+
+.stepperAlerta .stepperDot {
+  background: var(--color-warning-ink);
+  border-color: var(--color-warning-ink);
+  color: #fff;
+}
+
+.alerta {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-ink);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-ink);
+  font-size: var(--text-data-size);
+}
+
+.alerta > svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.alerta ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.alerta li button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }

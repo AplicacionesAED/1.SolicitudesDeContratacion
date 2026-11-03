@@ -418,3 +418,101 @@
   background: var(--color-danger-ink);
   color: #fff;
 }
+
+/* Pantallas de trabajo denso: sin sidebar fijo; se abre encima del contenido desde el boton de menu del topbar. */
+.shellSinSidebar {
+  --drawer-ms: 320ms;
+  --drawer-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  grid-template-columns: 1fr;
+}
+
+.sidebarFlotante {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 276px;
+  z-index: var(--z-modal, 310);
+  max-height: none;
+  /* Sin overflow a proposito: el flyout (position:absolute, left:100%) sale del ancho del sidebar y un overflow lo recortaria. */
+  box-shadow: var(--shadow-floating);
+  /* Siempre montado: cerrado queda fuera de pantalla y sin foco (visibility), asi la salida tambien se anima. */
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform var(--drawer-ms) var(--drawer-ease), visibility 0s linear var(--drawer-ms);
+}
+
+.sidebarAbierto {
+  transform: none;
+  visibility: visible;
+  transition: transform var(--drawer-ms) var(--drawer-ease), visibility 0s;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop, 300);
+  border: 0;
+  background: color-mix(in srgb, var(--color-brand-deep) 45%, transparent);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--drawer-ms) var(--drawer-ease), visibility 0s linear var(--drawer-ms);
+}
+
+.backdropAbierto {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--drawer-ms) var(--drawer-ease), visibility 0s;
+}
+
+.menuToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.menuToggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-ink);
+}
+
+.menuToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .shellSinSidebar {
+    grid-template-rows: 1fr;
+  }
+
+  /* En movil el flyout se abre en linea (static), asi que aqui si hace falta el scroll propio del panel. */
+  .sidebarFlotante {
+    overflow-y: auto;
+  }
+}
+
+/* Sin movimiento: solo un fundido (sin desplazamiento), igual de pausado para que no se sienta un corte. */
+@media (prefers-reduced-motion: reduce) {
+  .sidebarFlotante,
+  .sidebarAbierto {
+    transform: none;
+    opacity: 0;
+    transition: opacity var(--drawer-ms) ease, visibility 0s linear var(--drawer-ms);
+  }
+
+  .sidebarAbierto {
+    opacity: 1;
+    transition: opacity var(--drawer-ms) ease, visibility 0s;
+  }
+}

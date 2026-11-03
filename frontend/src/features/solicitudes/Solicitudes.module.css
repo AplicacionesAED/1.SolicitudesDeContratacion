@@ -874,3 +874,101 @@ select.celdaInput.celdaSelect:not([size]) {
   text-align: center;
   color: #586673;
 }
+
+/* Cuadro Comparativo: campos editables en cajas con borde visible, celdas calculadas / de solo lectura planas y
+   sombreadas, y filas mas bajas. Todo cuelga de `.cuadro` para no tocar las demas tablas densas (Memoria, Cronograma). */
+.cuadro {
+  --cuadro-ro: color-mix(in srgb, var(--color-brand-deep) 6%, white);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.cuadroLeyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  font-size: var(--text-data-size);
+  color: var(--color-ink-secondary);
+}
+
+.leyendaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leyendaMuestra {
+  width: 22px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-input);
+  background: #fff;
+}
+
+.leyendaMuestraRo {
+  border-color: var(--color-border-strong);
+  background: var(--cuadro-ro);
+}
+
+.cuadro .table th,
+.cuadro .table td {
+  padding: 4px 8px;
+}
+
+.cuadro .table th {
+  padding: 6px 8px;
+  font-size: 0.6875rem;
+}
+
+.cuadro .celdaInput,
+.cuadro .growWrap > textarea {
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background-color: #fff;
+}
+
+.cuadro .growWrap::after {
+  padding: 4px 8px;
+}
+
+.cuadro .celdaInput:hover,
+.cuadro .growWrap > textarea:hover {
+  border-color: var(--color-primary);
+  background-color: #fff;
+}
+
+.cuadro .celdaInput:focus,
+.cuadro .growWrap > textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.cuadro .table td.celdaCalc {
+  background: var(--cuadro-ro);
+  color: var(--color-ink-secondary);
+}
+
+.cuadro .celdaNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cuadro input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.cuadro input[type='number']::-webkit-inner-spin-button,
+.cuadro input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Texto largo en las celdas del cuadro: hace wrap (nunca una linea infinita) y las filas alinean arriba cuando una celda crece. */
+.cuadro .table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
