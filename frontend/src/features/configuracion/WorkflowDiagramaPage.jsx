@@ -190,13 +190,10 @@ const NODOS_DEF = [
     ],
   },
   { id: 'APROBACION_FINAL', x: 300, y: 1300, handles: [{ id: 'in', type: 'target', position: Position.Top }, { id: 'out', type: 'source', position: Position.Bottom }] },
-  // Solo para Directa (`gerenteComprasActivo`, 2026-10-09 -- pedido
-  // explícito del usuario: "después de la Aprobación Final va a aprobar
-  // otra persona, nuevo paso de Gerente de Compras, último"). Mismo criterio
-  // visual que los demás nodos condicionales de este archivo: ubicado en el
-  // tronco principal, entre APROBACION_FINAL y COMPLETADA, sin mover la
-  // posición de ningún otro nodo.
-  { id: 'PENDIENTE_GERENTE_COMPRAS', x: 300, y: 1410, handles: [{ id: 'in', type: 'target', position: Position.Top }, { id: 'out', type: 'source', position: Position.Bottom }] },
+  // Solo para Directa (`gerenteComprasActivo`): firma del Gerente de Compras. Desde 2026-11-03 va entre
+  // CREACION_MINUTA y EN_CONTROLES (antes de Adpro). Mismo criterio visual que los demás nodos condicionales de este
+  // archivo: ubicado en el tronco principal, sin mover la posición de ningún otro nodo.
+  { id: 'PENDIENTE_GERENTE_COMPRAS', x: 300, y: 970, handles: [{ id: 'in', type: 'target', position: Position.Top }, { id: 'out', type: 'source', position: Position.Bottom }] },
   { id: 'COMPLETADA', x: 300, y: 1520, handles: [{ id: 'in', type: 'target', position: Position.Top }] },
 
   // ANULAR (2026-09-09) es una acción bastante distinta del resto: puede
@@ -342,17 +339,14 @@ function edgesDef(tecnicoActivo, proyeccionActiva, residenteActivo, gerenteCompr
     { id: 'e-reenviar-devuelta', source: 'DEVUELTA', sourceHandle: 'out-reenviar', target: 'ENVIADA', targetHandle: 'in-reenviar', accion: 'REENVIAR', pildora: 'REENVIAR', variant: 'edgeMuted' },
     { id: 'e-reenviar-revision', source: 'EN_REVISION', sourceHandle: 'out', target: 'ENVIADA', targetHandle: 'in-reenviar', accion: 'REENVIAR', variant: 'edgeMuted' },
     { id: 'e-tramitar-ok', source: 'EN_TRAMITE_CONTRATOS', sourceHandle: 'out-bottom', target: 'CREACION_MINUTA', targetHandle: 'in', accion: 'TRAMITAR_OK', pildora: 'TRAMITAR_OK', variant: 'edgeMain' },
-    { id: 'e-avanzar', source: 'CREACION_MINUTA', sourceHandle: 'out', target: 'EN_CONTROLES', targetHandle: 'in', accion: 'AVANZAR_CONTRATOS', pildora: 'AVANZAR_CONTRATOS', variant: 'edgeMain' },
+    // AVANZAR_CONTRATOS: EN_CONTROLES por default (INDIRECTA, sin cambios), o PENDIENTE_GERENTE_COMPRAS cuando
+    // `gerenteComprasActivo` (Directa, firma del Gerente de Compras antes de Adpro) -- mismo criterio que
+    // APROBAR_DIRECTOR más arriba.
+    { id: 'e-avanzar', source: 'CREACION_MINUTA', sourceHandle: 'out', target: gerenteComprasActivo ? 'PENDIENTE_GERENTE_COMPRAS' : 'EN_CONTROLES', targetHandle: 'in', accion: 'AVANZAR_CONTRATOS', pildora: 'AVANZAR_CONTRATOS', variant: 'edgeMain' },
     { id: 'e-registrar-adpro', source: 'EN_CONTROLES', sourceHandle: 'out', target: 'APROBACION_FINAL', targetHandle: 'in', accion: 'REGISTRAR_ADPRO', pildora: 'REGISTRAR_ADPRO', variant: 'edgeMain' },
-    // APROBAR_FINAL: COMPLETADA directo por default (INDIRECTA, sin
-    // cambios), o PENDIENTE_GERENTE_COMPRAS cuando `gerenteComprasActivo`
-    // (Directa, 2026-10-09) -- mismo criterio que APROBAR_DIRECTOR más
-    // arriba.
-    gerenteComprasActivo
-      ? { id: 'e-aprobar-final', source: 'APROBACION_FINAL', sourceHandle: 'out', target: 'PENDIENTE_GERENTE_COMPRAS', targetHandle: 'in', accion: 'APROBAR_FINAL', pildora: 'APROBAR_FINAL', variant: 'edgeMain' }
-      : { id: 'e-aprobar-final', source: 'APROBACION_FINAL', sourceHandle: 'out', target: 'COMPLETADA', targetHandle: 'in', accion: 'APROBAR_FINAL', pildora: 'APROBAR_FINAL', variant: 'edgeMain' },
+    { id: 'e-aprobar-final', source: 'APROBACION_FINAL', sourceHandle: 'out', target: 'COMPLETADA', targetHandle: 'in', accion: 'APROBAR_FINAL', pildora: 'APROBAR_FINAL', variant: 'edgeMain' },
     ...(gerenteComprasActivo
-      ? [{ id: 'e-aprobar-gerente-compras', source: 'PENDIENTE_GERENTE_COMPRAS', sourceHandle: 'out', target: 'COMPLETADA', targetHandle: 'in', accion: 'APROBAR_GERENTE_COMPRAS', pildora: 'APROBAR_GERENTE_COMPRAS', variant: 'edgeMain' }]
+      ? [{ id: 'e-aprobar-gerente-compras', source: 'PENDIENTE_GERENTE_COMPRAS', sourceHandle: 'out', target: 'EN_CONTROLES', targetHandle: 'in', accion: 'APROBAR_GERENTE_COMPRAS', pildora: 'APROBAR_GERENTE_COMPRAS', variant: 'edgeMain' }]
       : []),
     { id: 'e-anular', source: 'EN_CONTROLES', sourceHandle: 'out-anular', target: 'ANULADA', targetHandle: 'in', accion: 'ANULAR', pildora: 'ANULAR', variant: 'edgeDanger', dashed: true },
   ];
@@ -415,11 +409,10 @@ export function WorkflowDiagramaPage() {
     [desviosDeEstaCategoria]
   );
 
-  // Aprobación Gerente de Compras (2026-10-09) -- mismo criterio que
-  // `residenteActivo`/`proyeccionActiva`: paso nuevo AL FINAL del flujo
-  // Directa, activo solo si existe el desvío real sembrado en el backend.
+  // Firma Gerente de Compras -- mismo criterio que `residenteActivo`/`proyeccionActiva`: paso de Directa
+  // (desde 2026-11-03 va antes de Adpro), activo solo si existe el desvío real sembrado en el backend.
   const gerenteComprasActivo = useMemo(
-    () => desviosDeEstaCategoria.some((d) => d.activo && d.accion === 'APROBAR_FINAL' && d.estado_destino === 'PENDIENTE_GERENTE_COMPRAS'),
+    () => desviosDeEstaCategoria.some((d) => d.activo && d.accion === 'AVANZAR_CONTRATOS' && d.estado_destino === 'PENDIENTE_GERENTE_COMPRAS'),
     [desviosDeEstaCategoria]
   );
 

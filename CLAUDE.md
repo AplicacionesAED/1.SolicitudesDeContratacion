@@ -99,7 +99,7 @@ migración; **no** va en producción.
   - INDIRECTA: ENVIADA → (PENDIENTE_DIRECTOR_TECNICO si solicitante TECNICA) → EN_TRAMITE_CONTRATOS → CREACION_MINUTA →
     EN_CONTROLES → APROBACION_FINAL → COMPLETADA.
   - DIRECTA: ENVIADA (Director de Obra) → PENDIENTE_RESIDENTE_ADMINISTRATIVO → EN_PROYECCION_CONTROLES → EN_TRAMITE_CONTRATOS →
-    elaboración de orden → N° Adpro → aprobación final → Gerente de Compras → COMPLETADA. Sin Director Técnico.
+    elaboración de orden → firma del Gerente de Compras (`PENDIENTE_GERENTE_COMPRAS`, desvío de `AVANZAR_CONTRATOS`) → N° Adpro → aprobación final → COMPLETADA. Sin Director Técnico.
   - `DEVOLVER` desde Proyección o Trámite en Directa vuelve a PENDIENTE_RESIDENTE_ADMINISTRATIVO; desde los demás pasos a
     DEVUELTA. `REVISAR` (nota obligatoria) y `ANULAR` (motivo obligatorio, desde cualquier estado enviado salvo COMPLETADA;
     estado terminal ANULADA, slot `controles_adpro`). `COMENTAR` (solo en EN_PROYECCION_CONTROLES, no cambia estado, nota

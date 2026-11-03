@@ -19,14 +19,13 @@ export const ESTADO_LABELS = {
   ENVIO_CONTRATO_POLIZAS: 'Envío Contrato y Pólizas',
   EN_CONTROLES: 'En Controles',
   APROBACION_FINAL: 'Aprobación Final',
-  // Paso nuevo AL FINAL del flujo Directa, 2026-10-09 -- después de la
-  // aprobación de Director/a de Controles (APROBACION_FINAL, sin cambios de
-  // estado técnico) aprueba el Gerente de Compras. Este label es genérico
+  // Firma del Gerente de Compras en Directa -- desde 2026-11-03 va ANTES del Residente
+  // Administrativo — Adpro (tras la elaboración de la orden). Este label es genérico
   // (compartido con INDIRECTA en los filtros/badges, aunque INDIRECTA nunca
   // alcanza este estado en la práctica) -- la etiqueta category-aware
   // "Aprobación Director/a de Controles" vive solo en
   // EstadoTimeline.jsx#WORKFLOW_STEPS_DIRECTA, no acá.
-  PENDIENTE_GERENTE_COMPRAS: 'Pendiente Gerente de Compras',
+  PENDIENTE_GERENTE_COMPRAS: 'Pendiente firma Gerente de Compras',
   COMPLETADA: 'Completada',
   DEVUELTA: 'Devuelta',
   ANULADA: 'Anulada',
@@ -121,7 +120,7 @@ export const ACCION_ESTADO_DESTINO = {
   PASAR_CONTROLES: 'EN_CONTROLES',
   REGISTRAR_ADPRO: 'APROBACION_FINAL',
   APROBAR_FINAL: 'COMPLETADA',
-  APROBAR_GERENTE_COMPRAS: 'COMPLETADA',
+  APROBAR_GERENTE_COMPRAS: 'EN_CONTROLES',
   REENVIAR: 'ENVIADA',
   ANULAR: 'ANULADA',
   IMPORTAR_HISTORICO: 'COMPLETADA',
@@ -146,7 +145,7 @@ export const ACCION_NOMBRES_CORTOS = {
   PASAR_CONTROLES: 'Pasar a Controles',
   REGISTRAR_ADPRO: 'Registrar Adpro',
   APROBAR_FINAL: 'Aprobar Final',
-  APROBAR_GERENTE_COMPRAS: 'Aprobar (Gerente de Compras)',
+  APROBAR_GERENTE_COMPRAS: 'Firmar (Gerente de Compras)',
   REENVIAR: 'Reenviar',
   ANULAR: 'Anular',
 };
@@ -188,7 +187,7 @@ export const ACCION_LABELS = {
   PASAR_CONTROLES: 'Contrato y pólizas enviados a Controles',
   REGISTRAR_ADPRO: 'Número de contrato Adpro registrado',
   APROBAR_FINAL: 'Aprobación definitiva por Director de Controles',
-  APROBAR_GERENTE_COMPRAS: 'Aprobada por Gerente de Compras',
+  APROBAR_GERENTE_COMPRAS: 'Firmada por Gerente de Compras',
   REENVIAR: 'Solicitud reenviada para aprobación',
   ANULAR: 'Solicitud anulada',
   IMPORTAR_HISTORICO: 'Registro histórico importado',

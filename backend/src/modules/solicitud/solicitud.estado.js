@@ -23,6 +23,7 @@ const HistorialSolicitud = require('./historialSolicitud.model');
 const solicitudService = require('./solicitud.service');
 const Usuario = require('../usuario/usuario.model');
 const notificacionService = require('../notificacion/notificacion.service');
+const Tercero = require('../tercero/tercero.model');
 const CuadroComparativo = require('./cuadroComparativo.model');
 const CuadroComparativoProveedor = require('./cuadroComparativoProveedor.model');
 const CuadroComparativoItem = require('./cuadroComparativoItem.model');
@@ -102,6 +103,21 @@ const cambiarEstado = asyncHandler(async (req, res) => {
     const requiredFields = ['tipo', 'tercero_id', 'descripcion_actividad', 'plazo_ejecucion', 'forma_pago', 'valor_final'];
     for (const field of requiredFields) {
       if (!solicitud[field]) throw new ApiError(400, `Falta completar "${CAMPO_LABEL[field] ?? field}" antes de poder enviar la solicitud.`);
+    }
+    // Los datos del contratista deben estar completos (los usa el documento generado) -- el frontend lo valida en espejo.
+    const DATOS_CONTRATISTA = {
+      razon_social: 'Razón social',
+      nit: 'NIT',
+      representante_legal: 'Representante legal',
+      cedula_representante: 'Cédula representante',
+      correo_firma: 'Correo de firma',
+      direccion_representante: 'Dirección representante',
+      telefono_representante: 'Teléfono representante',
+    };
+    const contratista = await Tercero.findByPk(solicitud.tercero_id);
+    const faltantesContratista = Object.entries(DATOS_CONTRATISTA).filter(([campo]) => !String(contratista?.[campo] ?? '').trim()).map(([, label]) => label);
+    if (faltantesContratista.length > 0) {
+      throw new ApiError(400, `Faltan datos del contratista antes de poder enviar la solicitud: ${faltantesContratista.join(', ')}.`);
     }
     // 2026-09-09 "en directos, Orden de Servicio debe tener el mismo
     // formato que Contrato... de momento debe ser exactamente igual" --
@@ -252,8 +268,7 @@ const cambiarEstado = asyncHandler(async (req, res) => {
   // fecha_aprobacion_residente_administrativo en paralelo (migración), no se
   // toca schema desde acá.
   if (accion === 'APROBAR_RESIDENTE_ADMINISTRATIVO') updateData.fecha_aprobacion_residente_administrativo = new Date();
-  // Paso nuevo AL FINAL del flujo Directa (2026-10-09) -- mismo patrón de
-  // estampa automática que los demás `fecha_aprobacion_*`.
+  // Firma del Gerente de Compras (Directa) -- mismo patrón de estampa automática que los demás `fecha_aprobacion_*`.
   if (accion === 'APROBAR_GERENTE_COMPRAS') updateData.fecha_aprobacion_gerente_compras = new Date();
   if (accion === 'REVISAR') {
     updateData.necesita_revision = true;
@@ -354,7 +369,11 @@ const cambiarEstado = asyncHandler(async (req, res) => {
     }
 
     if (accion === 'AVANZAR_CONTRATOS' || accion === 'PASAR_CONTROLES') {
-      if (solicitud.coordinador_controles_id) {
+      // Directa: un desvío redirige AVANZAR_CONTRATOS a PENDIENTE_GERENTE_COMPRAS -- se avisa al Gerente de Compras
+      // asignado para su firma en vez de a Controles.
+      if (estadoDestino === 'PENDIENTE_GERENTE_COMPRAS') {
+        await notificacionService.notificarPendienteGerenteCompras(numId, solicitud.consecutivo, solicitud.responsable_gerente_compras_id);
+      } else if (solicitud.coordinador_controles_id) {
         await notificacionService.notificarControles(numId, solicitud.consecutivo, solicitud.coordinador_controles_id);
       }
     }
@@ -364,20 +383,12 @@ const cambiarEstado = asyncHandler(async (req, res) => {
     }
 
     if (accion === 'APROBAR_FINAL') {
-      // Paso nuevo AL FINAL del flujo Directa (2026-10-09): para DIRECTA, el
-      // desvío sembrado redirige esto a PENDIENTE_GERENTE_COMPRAS en vez de
-      // COMPLETADA -- en ese caso, avisar al Gerente de Compras asignado en
-      // vez de dar la solicitud por completada (INDIRECTA no cambia, sigue
-      // yendo directo a COMPLETADA).
-      if (estadoDestino === 'PENDIENTE_GERENTE_COMPRAS') {
-        await notificacionService.notificarPendienteGerenteCompras(numId, solicitud.consecutivo, solicitud.responsable_gerente_compras_id);
-      } else {
-        await notificacionService.notificarCompletada(numId, solicitud.consecutivo, [solicitud.solicitante_id, solicitud.aprobador_id]);
-      }
+      await notificacionService.notificarCompletada(numId, solicitud.consecutivo, [solicitud.solicitante_id, solicitud.aprobador_id]);
     }
 
-    if (accion === 'APROBAR_GERENTE_COMPRAS') {
-      await notificacionService.notificarCompletada(numId, solicitud.consecutivo, [solicitud.solicitante_id, solicitud.aprobador_id]);
+    // Firma del Gerente de Compras (Directa): la solicitud continúa a Adpro con el Residente Administrativo.
+    if (accion === 'APROBAR_GERENTE_COMPRAS' && solicitud.responsable_residente_administrativo_id) {
+      await notificacionService.notificarControles(numId, solicitud.consecutivo, solicitud.responsable_residente_administrativo_id);
     }
   } catch (notifError) {
     console.error('Error al enviar notificaciones:', notifError);

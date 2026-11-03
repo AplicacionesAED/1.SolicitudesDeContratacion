@@ -223,7 +223,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
     contratos: 'Revisión de Contratos',
     adpro: 'Registrar Número Adpro',
     aprobar_final: 'Aprobación definitiva',
-    aprobar_gerente_compras: 'Aprobar — Gerente de Compras',
+    aprobar_gerente_compras: 'Firmar — Gerente de Compras',
     reenviar: 'Reenviar solicitud',
     anular: 'Anular solicitud',
     eliminar: 'Eliminar solicitud',
@@ -277,7 +277,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
           {canAvanzarContratos && esDirecta && <Button onClick={() => ejecutar('AVANZAR_CONTRATOS')} disabled={loading}>Confirmar elaboración de orden</Button>}
           {canRegistrarAdpro && <Button onClick={() => abrirModal('adpro')}>Registrar Número Adpro</Button>}
           {canAprobarFinal && <Button onClick={() => abrirModal('aprobar_final')}>Aprobar Definitivamente</Button>}
-          {canAprobarGerenteCompras && <Button onClick={() => abrirModal('aprobar_gerente_compras')}>Aprobar</Button>}
+          {canAprobarGerenteCompras && <Button onClick={() => abrirModal('aprobar_gerente_compras')}>Firmar</Button>}
           {canReenviar && <Button onClick={() => abrirModal('reenviar')}>Reenviar</Button>}
           {canEdit && <Button variant="secondary" onClick={() => navigate(`/solicitudes/${solicitud.id}/editar`)}>Editar solicitud</Button>}
           {canAnular && <Button variant="danger" onClick={() => abrirModal('anular')}>Anular solicitud</Button>}
@@ -359,10 +359,10 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
         {modalType === 'aprobar_final' && (
           <p>
             ¿Confirmas la aprobación definitiva?{' '}
-            {esDirecta ? 'Pasará al Gerente de Compras para su aprobación.' : <>El estado cambiará a <strong>Completada</strong>.</>}
+            <>El estado cambiará a <strong>Completada</strong>.</>
           </p>
         )}
-        {modalType === 'aprobar_gerente_compras' && <p>¿Confirmas la aprobación como Gerente de Compras? El estado cambiará a <strong>Completada</strong>.</p>}
+        {modalType === 'aprobar_gerente_compras' && <p>¿Confirmas la firma como Gerente de Compras? La solicitud pasará al Residente Administrativo para registrar el N° Adpro.</p>}
         {modalType === 'reenviar' && <p>¿Confirmas que deseas reenviar la solicitud <strong>{solicitud.consecutivo}</strong>?</p>}
         {modalType === 'anular' && (
           <>

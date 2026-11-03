@@ -101,15 +101,14 @@ async function notificarAdproRegistrado(solicitudId, consecutivo, directorContro
   await crearNotificacion(directorControlesId, 'Solicitud lista para aprobación final', `La solicitud ${consecutivo} tiene número Adpro registrado y requiere su aprobación final.`, `/solicitudes/${solicitudId}`);
 }
 
-// Paso nuevo AL FINAL del flujo Directa (2026-10-09) -- tras la aprobación
-// de Director/a de Controles (APROBAR_FINAL), un desvío redirige DIRECTA a
-// PENDIENTE_GERENTE_COMPRAS en vez de COMPLETADA directo (ver
+// Firma del Gerente de Compras en Directa -- desde 2026-11-03 va ANTES de Adpro: al terminar la elaboración de la
+// orden (AVANZAR_CONTRATOS) un desvío redirige DIRECTA a PENDIENTE_GERENTE_COMPRAS (ver
 // solicitud.estado.js). Guard interno por si el frente todavía no tiene un
 // Gerente de Compras asignado -- mismo criterio que
 // notificarPendienteResidenteAdministrativo.
 async function notificarPendienteGerenteCompras(solicitudId, consecutivo, gerenteComprasUserId) {
   if (!gerenteComprasUserId) return;
-  await crearNotificacion(gerenteComprasUserId, 'Solicitud pendiente de tu aprobación', `La solicitud ${consecutivo} fue aprobada por Director/a de Controles; debes revisarla y aprobarla como Gerente de Compras.`, `/solicitudes/${solicitudId}`);
+  await crearNotificacion(gerenteComprasUserId, 'Solicitud pendiente de tu firma', `La solicitud ${consecutivo} terminó la elaboración de la orden; debes revisarla y firmarla como Gerente de Compras.`, `/solicitudes/${solicitudId}`);
 }
 
 async function notificarCompletada(solicitudId, consecutivo, involucrados) {

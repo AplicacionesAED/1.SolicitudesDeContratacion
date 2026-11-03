@@ -42,16 +42,16 @@ const WORKFLOW_STEPS = [
 // Director de Obra y Controles — Proyección (misma persona que el paso
 // "Residente Administrativo — Adpro" más abajo, por eso comparte el ícono
 // `UserCheck` -- 2 participaciones del mismo rol en este flujo).
-// 2026-10-09: pedido explícito del usuario -- "después de la Aprobación
-// Final va a aprobar otra persona... nuevo paso de Gerente de Compras
-// (último). Así que la aprobación final puede pasar a llamarse Aprobación
-// Director/a de Controles, que es quien aprueba en estos momentos". El
-// estado técnico sigue siendo APROBACION_FINAL/APROBAR_FINAL (sin cambios
-// en el motor, ver solicitud.autorizacion.js) -- acá SOLO se renombra la
-// etiqueta visible para Directa (Indirecta se queda con "Aprobación Final"
-// en WORKFLOW_STEPS de arriba, sin tocar) y se agrega el paso nuevo
-// después, con su propio ícono (`Star` quedó reservado para "Completada",
-// se reusa `ThumbsUp` para el paso nuevo igual que el que reemplaza).
+// 2026-10-09: pedido explícito del usuario -- la aprobación final pasa a
+// llamarse Aprobación Director/a de Controles, que es quien aprueba en
+// estos momentos. El estado técnico sigue siendo APROBACION_FINAL/
+// APROBAR_FINAL (sin cambios en el motor, ver solicitud.autorizacion.js) --
+// acá SOLO se renombra la etiqueta visible para Directa (Indirecta se queda
+// con "Aprobación Final" en WORKFLOW_STEPS de arriba, sin tocar).
+// 2026-11-03: el paso del Gerente de Compras deja de ser el último y pasa a
+// ser una FIRMA que va entre Elaboración de Orden y Residente Administrativo
+// — Adpro (el estado técnico sigue siendo PENDIENTE_GERENTE_COMPRAS/
+// APROBAR_GERENTE_COMPRAS; `Star` queda reservado para "Completada").
 const WORKFLOW_STEPS_DIRECTA = [
   { label: 'Solicitud Enviada', icon: Send, completionAction: 'ENVIAR', activeStates: [] },
   { label: 'Director de Obra', icon: CheckCircle, completionAction: 'APROBAR_DIRECTOR', activeStates: ['ENVIADA'], resettable: true },
@@ -59,9 +59,9 @@ const WORKFLOW_STEPS_DIRECTA = [
   { label: 'Controles — Proyección', icon: ClipboardCheck, completionAction: 'APROBAR_PROYECCION', activeStates: ['EN_PROYECCION_CONTROLES'], resettable: true },
   { label: 'Trámite Contratos', icon: FileText, completionAction: 'TRAMITAR_OK', activeStates: ['EN_TRAMITE_CONTRATOS', 'APROBADA_DIRECTOR'], resettable: true },
   { label: 'Elaboración de Orden', icon: PenLine, completionAction: 'AVANZAR_CONTRATOS', activeStates: ['CREACION_MINUTA'], resettable: true },
+  { label: 'Firma Gerente de Compras', icon: PenLine, completionAction: 'APROBAR_GERENTE_COMPRAS', activeStates: ['PENDIENTE_GERENTE_COMPRAS'], resettable: true },
   { label: 'Residente Administrativo — Adpro', icon: UserCheck, completionAction: 'REGISTRAR_ADPRO', activeStates: ['EN_CONTROLES'], resettable: true },
   { label: 'Aprobación Director/a de Controles', icon: ThumbsUp, completionAction: 'APROBAR_FINAL', activeStates: ['APROBACION_FINAL'], resettable: true },
-  { label: 'Aprobación Gerente de Compras', icon: ThumbsUp, completionAction: 'APROBAR_GERENTE_COMPRAS', activeStates: ['PENDIENTE_GERENTE_COMPRAS'], resettable: true },
   { label: 'Completada', icon: Star, completionAction: null, activeStates: ['COMPLETADA'] },
 ];
 

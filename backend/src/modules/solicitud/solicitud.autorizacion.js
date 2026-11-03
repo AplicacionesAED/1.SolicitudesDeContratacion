@@ -70,13 +70,11 @@ const ESTADOS_ORIGEN_SIN_ANULAR = {
   PASAR_CONTROLES: ['ENVIO_CONTRATO_POLIZAS'],
   REGISTRAR_ADPRO: ['EN_CONTROLES'],
   APROBAR_FINAL: ['APROBACION_FINAL'],
-  // APROBAR_GERENTE_COMPRAS (2026-10-09, flujo propio de Directa) -- paso
-  // nuevo AL FINAL del flujo: tras la aprobación de Director/a de Controles
-  // (APROBAR_FINAL), un desvío condicional (sembrado por migración, ver
-  // solicitud.estado.js#desvios) redirige DIRECTA a
-  // PENDIENTE_GERENTE_COMPRAS en vez de COMPLETADA directo. INDIRECTA no
-  // tiene ningún desvío para APROBAR_FINAL, así que este estado/acción
-  // nunca se alcanza ahí -- igual que PENDIENTE_RESIDENTE_ADMINISTRATIVO.
+  // APROBAR_GERENTE_COMPRAS (flujo propio de Directa; en la práctica es la FIRMA del Gerente de Compras) -- 2026-11-03
+  // pasó a ir ANTES del Residente Administrativo — Adpro: al terminar la elaboración de la orden (AVANZAR_CONTRATOS),
+  // un desvío condicional (sembrado por migración, ver solicitud.estado.js#desvios) redirige DIRECTA a
+  // PENDIENTE_GERENTE_COMPRAS en vez de EN_CONTROLES. INDIRECTA no tiene ese desvío, así que este estado/acción nunca
+  // se alcanza ahí -- igual que PENDIENTE_RESIDENTE_ADMINISTRATIVO.
   APROBAR_GERENTE_COMPRAS: ['PENDIENTE_GERENTE_COMPRAS'],
   REENVIAR: ['DEVUELTA', 'EN_REVISION'],
 };
@@ -110,12 +108,9 @@ const ESTADO_DESTINO = {
   AVANZAR_CONTRATOS: 'EN_CONTROLES',
   PASAR_CONTROLES: 'EN_CONTROLES',
   REGISTRAR_ADPRO: 'APROBACION_FINAL',
-  // Default (INDIRECTA, sin cambios): COMPLETADA directo. Para DIRECTA, el
-  // desvío sembrado en 20261009120300-seed-desvio-aprobar-final-directa.js
-  // redirige esto a PENDIENTE_GERENTE_COMPRAS -- ver
-  // solicitud.estado.js#desvios.
   APROBAR_FINAL: 'COMPLETADA',
-  APROBAR_GERENTE_COMPRAS: 'COMPLETADA',
+  // Firma del Gerente de Compras (solo Directa): continúa hacia el Residente Administrativo — Adpro (EN_CONTROLES).
+  APROBAR_GERENTE_COMPRAS: 'EN_CONTROLES',
   REENVIAR: 'ENVIADA',
   ANULAR: 'ANULADA',
 };
@@ -394,7 +389,7 @@ const ACCION_PRINCIPAL_POR_ESTADO = {
   CREACION_MINUTA: 'AVANZAR_CONTRATOS',
   EN_CONTROLES: 'REGISTRAR_ADPRO',
   APROBACION_FINAL: 'APROBAR_FINAL',
-  // Paso nuevo AL FINAL del flujo Directa (2026-10-09) -- mismo criterio
+  // Firma del Gerente de Compras en Directa (antes de Adpro desde 2026-11-03) -- mismo criterio
   // que PENDIENTE_RESIDENTE_ADMINISTRATIVO: cae gratis vía
   // Object.keys(ACCION_PRINCIPAL_POR_ESTADO) + CAMPOS_PENDIENTES (que ya
   // incluye responsable_gerente_compras_id).
