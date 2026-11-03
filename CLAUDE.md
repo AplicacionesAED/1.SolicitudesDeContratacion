@@ -19,7 +19,7 @@ indirecta** de Baía Kristal. Express + Sequelize + PostgreSQL (`solicitudes_ind
 
 ## Reglas de trabajo (importantes)
 
-- Commits en español, autor `GEliasDev <GEliasDev@users.noreply.github.com>`, **sin** trailer ni mención a Claude. Nunca
+- Commits en español, autor `GEliasDev <gvaldelamar2003@outlook.com>`, **sin** trailer ni mención a Claude. Nunca
   `git push` (lo hace el usuario). No commitear sin que lo pida; `git add` de archivos específicos.
 - Nunca editar `.env` ni escribir credenciales. La BD local de desarrollo es la real: pruebas en solo lectura; si hay que
   escribir, fixtures `ZTEST_*` y borrarlos al terminar (y devolver el contador `contador_consecutivos` que se haya consumido).
