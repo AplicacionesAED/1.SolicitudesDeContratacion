@@ -193,7 +193,18 @@ const NODOS_DEF = [
   // Solo para Directa (`gerenteComprasActivo`): firma del Gerente de Compras. Desde 2026-11-03 va entre
   // CREACION_MINUTA y EN_CONTROLES (antes de Adpro). Mismo criterio visual que los demás nodos condicionales de este
   // archivo: ubicado en el tronco principal, sin mover la posición de ningún otro nodo.
-  { id: 'PENDIENTE_GERENTE_COMPRAS', x: 300, y: 970, handles: [{ id: 'in', type: 'target', position: Position.Top }, { id: 'out', type: 'source', position: Position.Bottom }] },
+  // 2026-11-05: unifica Trámite Contratos + Elaboración de Orden + firma -> "Compras y Contrataciones"; ocupa el lugar
+  // que tenía Trámite Contratos (Directa ya no dibuja EN_TRAMITE_CONTRATOS ni CREACION_MINUTA).
+  {
+    id: 'PENDIENTE_GERENTE_COMPRAS',
+    x: 300,
+    y: 560,
+    handles: [
+      { id: 'in', type: 'target', position: Position.Top },
+      { id: 'out', type: 'source', position: Position.Bottom },
+      { id: 'out-devolver', type: 'source', position: Position.Right },
+    ],
+  },
   { id: 'COMPLETADA', x: 300, y: 1520, handles: [{ id: 'in', type: 'target', position: Position.Top }] },
 
   // ANULAR (2026-09-09) es una acción bastante distinta del resto: puede
@@ -260,8 +271,10 @@ const NODOS_DEF = [
 // estas (el punto de quiebre se recalcula solo contra la posición ACTUAL de
 // cada nodo, incluida una que el admin haya arrastrado y guardado), queda
 // disponible por si hace falta ajustar una línea puntual más adelante.
+const ESTADOS_UNIFICADOS = ['EN_TRAMITE_CONTRATOS', 'CREACION_MINUTA'];
+
 function edgesDef(tecnicoActivo, proyeccionActiva, residenteActivo, gerenteComprasActivo) {
-  return [
+  const aristas = [
     { id: 'e-enviar', source: 'BORRADOR', sourceHandle: 'out', target: 'ENVIADA', targetHandle: 'in-top', accion: 'ENVIAR', pildora: 'ENVIAR', variant: 'edgeMain' },
     { id: 'e-borrador-tecnico', source: 'BORRADOR', sourceHandle: 'out-tecnico', target: 'PENDIENTE_DIRECTOR_TECNICO', targetHandle: 'in', variant: 'edgeMuted', dashed: true },
     {
@@ -323,7 +336,7 @@ function edgesDef(tecnicoActivo, proyeccionActiva, residenteActivo, gerenteCompr
       : []),
     ...(proyeccionActiva
       ? [
-          { id: 'e-aprobar-proyeccion', source: 'EN_PROYECCION_CONTROLES', sourceHandle: 'out-bottom', target: 'EN_TRAMITE_CONTRATOS', targetHandle: 'in-top', accion: 'APROBAR_PROYECCION', pildora: 'APROBAR_PROYECCION', variant: 'edgeMain' },
+          { id: 'e-aprobar-proyeccion', source: 'EN_PROYECCION_CONTROLES', sourceHandle: 'out-bottom', target: gerenteComprasActivo ? 'PENDIENTE_GERENTE_COMPRAS' : 'EN_TRAMITE_CONTRATOS', targetHandle: gerenteComprasActivo ? 'in' : 'in-top', accion: 'APROBAR_PROYECCION', pildora: 'APROBAR_PROYECCION', variant: 'edgeMain' },
           // DEVOLVER desde la proyección: el backend lo redirige a
           // PENDIENTE_RESIDENTE_ADMINISTRATIVO cuando `residenteActivo`
           // (solo Directa, 2026-09-22) -- si el flag no aplica, DEVUELTA.
@@ -348,8 +361,13 @@ function edgesDef(tecnicoActivo, proyeccionActiva, residenteActivo, gerenteCompr
     ...(gerenteComprasActivo
       ? [{ id: 'e-aprobar-gerente-compras', source: 'PENDIENTE_GERENTE_COMPRAS', sourceHandle: 'out', target: 'EN_CONTROLES', targetHandle: 'in', accion: 'APROBAR_GERENTE_COMPRAS', pildora: 'APROBAR_GERENTE_COMPRAS', variant: 'edgeMain' }]
       : []),
+    ...(gerenteComprasActivo
+      ? [{ id: 'e-devolver-gerente', source: 'PENDIENTE_GERENTE_COMPRAS', sourceHandle: 'out-devolver', target: residenteActivo ? 'PENDIENTE_RESIDENTE_ADMINISTRATIVO' : 'DEVUELTA', targetHandle: residenteActivo ? 'in-devolver-tramite' : 'in-tramite', accion: 'DEVOLVER', variant: 'edgeDanger', dashed: true }]
+      : []),
     { id: 'e-anular', source: 'EN_CONTROLES', sourceHandle: 'out-anular', target: 'ANULADA', targetHandle: 'in', accion: 'ANULAR', pildora: 'ANULAR', variant: 'edgeDanger', dashed: true },
   ];
+  // Con "Compras y Contrataciones" unificado, Directa no dibuja Trámite Contratos ni Elaboración de Orden (ni sus aristas).
+  return gerenteComprasActivo ? aristas.filter((e) => !ESTADOS_UNIFICADOS.includes(e.source) && !ESTADOS_UNIFICADOS.includes(e.target)) : aristas;
 }
 
 export function WorkflowDiagramaPage() {
@@ -412,7 +430,7 @@ export function WorkflowDiagramaPage() {
   // Firma Gerente de Compras -- mismo criterio que `residenteActivo`/`proyeccionActiva`: paso de Directa
   // (desde 2026-11-03 va antes de Adpro), activo solo si existe el desvío real sembrado en el backend.
   const gerenteComprasActivo = useMemo(
-    () => desviosDeEstaCategoria.some((d) => d.activo && d.accion === 'AVANZAR_CONTRATOS' && d.estado_destino === 'PENDIENTE_GERENTE_COMPRAS'),
+    () => desviosDeEstaCategoria.some((d) => d.activo && d.accion === 'APROBAR_PROYECCION' && d.estado_destino === 'PENDIENTE_GERENTE_COMPRAS'),
     [desviosDeEstaCategoria]
   );
 
@@ -439,7 +457,8 @@ export function WorkflowDiagramaPage() {
         (tecnicoActivo || n.id !== 'PENDIENTE_DIRECTOR_TECNICO') &&
         (residenteActivo || n.id !== 'PENDIENTE_RESIDENTE_ADMINISTRATIVO') &&
         (proyeccionActiva || n.id !== 'EN_PROYECCION_CONTROLES') &&
-        (gerenteComprasActivo || n.id !== 'PENDIENTE_GERENTE_COMPRAS')
+        (gerenteComprasActivo || n.id !== 'PENDIENTE_GERENTE_COMPRAS') &&
+        !(gerenteComprasActivo && ESTADOS_UNIFICADOS.includes(n.id))
     ).map((n) => {
       const guardada = layoutGuardado.nodos?.[n.id];
       return {

@@ -52,14 +52,14 @@ const WORKFLOW_STEPS = [
 // ser una FIRMA que va entre Elaboración de Orden y Residente Administrativo
 // — Adpro (el estado técnico sigue siendo PENDIENTE_GERENTE_COMPRAS/
 // APROBAR_GERENTE_COMPRAS; `Star` queda reservado para "Completada").
+// 2026-11-05: Trámite Contratos, Elaboración de Orden y la firma se unifican en un solo paso, "Compras y
+// Contrataciones" (la orden se genera con un botón, los otros dos eran solo un OK).
 const WORKFLOW_STEPS_DIRECTA = [
   { label: 'Solicitud Enviada', icon: Send, completionAction: 'ENVIAR', activeStates: [] },
   { label: 'Director de Obra', icon: CheckCircle, completionAction: 'APROBAR_DIRECTOR', activeStates: ['ENVIADA'], resettable: true },
   { label: 'Residente Administrativo — Revisión', icon: UserCheck, completionAction: 'APROBAR_RESIDENTE_ADMINISTRATIVO', activeStates: ['PENDIENTE_RESIDENTE_ADMINISTRATIVO'], resettable: true },
   { label: 'Controles — Proyección', icon: ClipboardCheck, completionAction: 'APROBAR_PROYECCION', activeStates: ['EN_PROYECCION_CONTROLES'], resettable: true },
-  { label: 'Trámite Contratos', icon: FileText, completionAction: 'TRAMITAR_OK', activeStates: ['EN_TRAMITE_CONTRATOS', 'APROBADA_DIRECTOR'], resettable: true },
-  { label: 'Elaboración de Orden', icon: PenLine, completionAction: 'AVANZAR_CONTRATOS', activeStates: ['CREACION_MINUTA'], resettable: true },
-  { label: 'Firma Gerente de Compras', icon: PenLine, completionAction: 'APROBAR_GERENTE_COMPRAS', activeStates: ['PENDIENTE_GERENTE_COMPRAS'], resettable: true },
+  { label: 'Compras y Contrataciones', icon: FileText, completionAction: 'APROBAR_GERENTE_COMPRAS', activeStates: ['PENDIENTE_GERENTE_COMPRAS'], resettable: true },
   { label: 'Residente Administrativo — Adpro', icon: UserCheck, completionAction: 'REGISTRAR_ADPRO', activeStates: ['EN_CONTROLES'], resettable: true },
   { label: 'Aprobación Director/a de Controles', icon: ThumbsUp, completionAction: 'APROBAR_FINAL', activeStates: ['APROBACION_FINAL'], resettable: true },
   { label: 'Completada', icon: Star, completionAction: null, activeStates: ['COMPLETADA'] },

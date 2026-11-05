@@ -37,7 +37,7 @@ const ETAPA_CORTA = {
   ENVIO_CONTRATO_POLIZAS: 'Contrato y Pólizas',
   EN_CONTROLES: 'Controles',
   APROBACION_FINAL: 'Aprobación Final',
-  PENDIENTE_GERENTE_COMPRAS: 'Gerente de Compras',
+  PENDIENTE_GERENTE_COMPRAS: 'Compras y Contrataciones',
   EN_REVISION: 'En revisión',
   DEVUELTA: 'Devuelta',
 };

@@ -368,6 +368,12 @@ const cambiarEstado = asyncHandler(async (req, res) => {
       await notificacionService.notificarComentario(numId, solicitud.consecutivo, solicitud.solicitante_id, nota);
     }
 
+    // Directa (2026-11-05): tras Controles — Proyección la solicitud va directo a "Compras y Contrataciones" (desvío de
+    // APROBAR_PROYECCION a PENDIENTE_GERENTE_COMPRAS) -- se avisa al Gerente de Compras asignado para su firma.
+    if (accion === 'APROBAR_PROYECCION' && estadoDestino === 'PENDIENTE_GERENTE_COMPRAS') {
+      await notificacionService.notificarPendienteGerenteCompras(numId, solicitud.consecutivo, solicitud.responsable_gerente_compras_id);
+    }
+
     if (accion === 'AVANZAR_CONTRATOS' || accion === 'PASAR_CONTROLES') {
       // Directa: un desvío redirige AVANZAR_CONTRATOS a PENDIENTE_GERENTE_COMPRAS -- se avisa al Gerente de Compras
       // asignado para su firma en vez de a Controles.

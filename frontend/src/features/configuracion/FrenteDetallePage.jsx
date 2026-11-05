@@ -81,7 +81,7 @@ const SLOTS = [
   { campo: 'controles_aprobacion_final', label: 'Director/a de Controles (aprueba el total)', codigo: 'CONTROLES', soloDirecta: true },
   // Paso nuevo AL FINAL del flujo Directa, 2026-10-09 -- aprueba después de
   // Director/a de Controles, antes de Completada.
-  { campo: 'gerente_compras', label: 'Gerente de Compras (firma antes de Residente Administrativo — Adpro)', codigo: 'GERENTE_COMPRAS', soloDirecta: true },
+  { campo: 'gerente_compras', label: 'Gerente de Compras (firma Compras y Contrataciones, antes de Residente Administrativo — Adpro)', codigo: 'GERENTE_COMPRAS', soloDirecta: true },
 ];
 
 // Puerto de "asignar usuarios a un registro" con CheckboxListSelect en vez

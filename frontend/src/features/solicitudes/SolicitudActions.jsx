@@ -94,6 +94,9 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
   // redirige DIRECTA acá en vez de COMPLETADA directo (ver
   // solicitud.estado.js#desvios). INDIRECTA nunca alcanza este estado.
   const canAprobarGerenteCompras = estado === 'PENDIENTE_GERENTE_COMPRAS' && puede('APROBAR_GERENTE_COMPRAS');
+  // Compras y Contrataciones (Directa, 2026-11-05): el Gerente de Compras tambien puede devolver; reutiliza el mismo
+  // modal que el Residente Administrativo (la solicitud vuelve a PENDIENTE_RESIDENTE_ADMINISTRATIVO).
+  const canDevolverGerenteCompras = estado === 'PENDIENTE_GERENTE_COMPRAS' && puede('DEVOLVER');
   const canReenviar = (estado === 'DEVUELTA' || estado === 'EN_REVISION') && puede('REENVIAR');
   // 2026-09-21: el backend expone `solicitud.puedeEditar` (misma lógica que
   // `accionesDisponibles` -- una sola fuente de verdad: el backend calcula,
@@ -111,7 +114,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
   // desde el backend, alcanza con `puede('ANULAR')` sin duplicar la regla acá.
   const canAnular = puede('ANULAR');
 
-  const hasAnyAction = canEnviar || canAprobarDirectorTecnico || canDevolverTecnico || canAprobarDirector || canDevolver || canAprobarResidenteAdministrativo || canDevolverResidenteAdministrativo || canAprobarProyeccion || canDevolverProyeccion || canComentarProyeccion || canContratosAction || showAnexosUpload || canAvanzarContratos || canRegistrarAdpro || canAprobarFinal || canAprobarGerenteCompras || canReenviar || canEdit || canAnular || isAdmin;
+  const hasAnyAction = canEnviar || canAprobarDirectorTecnico || canDevolverTecnico || canAprobarDirector || canDevolver || canAprobarResidenteAdministrativo || canDevolverResidenteAdministrativo || canAprobarProyeccion || canDevolverProyeccion || canComentarProyeccion || canContratosAction || showAnexosUpload || canAvanzarContratos || canRegistrarAdpro || canAprobarFinal || canAprobarGerenteCompras || canDevolverGerenteCompras || canReenviar || canEdit || canAnular || isAdmin;
 
   if (!hasAnyAction) return null;
 
@@ -223,7 +226,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
     contratos: 'Revisión de Contratos',
     adpro: 'Registrar Número Adpro',
     aprobar_final: 'Aprobación definitiva',
-    aprobar_gerente_compras: 'Firmar — Gerente de Compras',
+    aprobar_gerente_compras: 'Firmar — Compras y Contrataciones',
     reenviar: 'Reenviar solicitud',
     anular: 'Anular solicitud',
     eliminar: 'Eliminar solicitud',
@@ -278,6 +281,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
           {canRegistrarAdpro && <Button onClick={() => abrirModal('adpro')}>Registrar Número Adpro</Button>}
           {canAprobarFinal && <Button onClick={() => abrirModal('aprobar_final')}>Aprobar Definitivamente</Button>}
           {canAprobarGerenteCompras && <Button onClick={() => abrirModal('aprobar_gerente_compras')}>Firmar</Button>}
+          {canDevolverGerenteCompras && <Button variant="danger" onClick={() => abrirModal('devolver_residente_administrativo')}>Devolver</Button>}
           {canReenviar && <Button onClick={() => abrirModal('reenviar')}>Reenviar</Button>}
           {canEdit && <Button variant="secondary" onClick={() => navigate(`/solicitudes/${solicitud.id}/editar`)}>Editar solicitud</Button>}
           {canAnular && <Button variant="danger" onClick={() => abrirModal('anular')}>Anular solicitud</Button>}
@@ -362,7 +366,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
             <>El estado cambiará a <strong>Completada</strong>.</>
           </p>
         )}
-        {modalType === 'aprobar_gerente_compras' && <p>¿Confirmas la firma como Gerente de Compras? La solicitud pasará al Residente Administrativo para registrar el N° Adpro.</p>}
+        {modalType === 'aprobar_gerente_compras' && <p>¿Confirmas la firma de Compras y Contrataciones? La solicitud pasará al Residente Administrativo para registrar el N° Adpro.</p>}
         {modalType === 'reenviar' && <p>¿Confirmas que deseas reenviar la solicitud <strong>{solicitud.consecutivo}</strong>?</p>}
         {modalType === 'anular' && (
           <>

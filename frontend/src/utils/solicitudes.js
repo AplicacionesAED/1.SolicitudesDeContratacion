@@ -25,7 +25,7 @@ export const ESTADO_LABELS = {
   // alcanza este estado en la práctica) -- la etiqueta category-aware
   // "Aprobación Director/a de Controles" vive solo en
   // EstadoTimeline.jsx#WORKFLOW_STEPS_DIRECTA, no acá.
-  PENDIENTE_GERENTE_COMPRAS: 'Pendiente firma Gerente de Compras',
+  PENDIENTE_GERENTE_COMPRAS: 'Pendiente Compras y Contrataciones',
   COMPLETADA: 'Completada',
   DEVUELTA: 'Devuelta',
   ANULADA: 'Anulada',

@@ -108,7 +108,7 @@ async function notificarAdproRegistrado(solicitudId, consecutivo, directorContro
 // notificarPendienteResidenteAdministrativo.
 async function notificarPendienteGerenteCompras(solicitudId, consecutivo, gerenteComprasUserId) {
   if (!gerenteComprasUserId) return;
-  await crearNotificacion(gerenteComprasUserId, 'Solicitud pendiente de tu firma', `La solicitud ${consecutivo} terminó la elaboración de la orden; debes revisarla y firmarla como Gerente de Compras.`, `/solicitudes/${solicitudId}`);
+  await crearNotificacion(gerenteComprasUserId, 'Solicitud pendiente de tu firma', `La solicitud ${consecutivo} está en Compras y Contrataciones; debes revisarla y firmarla como Gerente de Compras.`, `/solicitudes/${solicitudId}`);
 }
 
 async function notificarCompletada(solicitudId, consecutivo, involucrados) {
