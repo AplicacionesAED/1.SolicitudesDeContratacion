@@ -581,12 +581,30 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   const masLejano = Math.max(0, ...pasos.map((p, i) => (visitados.has(p.key) ? i : 0)));
   const estadoPaso = (p, i) => (i === pasoIdx ? 'actual' : i < masLejano || visitados.has(p.key) ? (pendientesPorPaso[p.key].length > 0 ? 'alerta' : 'ok') : 'pendiente');
   const pasosConAlerta = pasos.filter((p, i) => estadoPaso(p, i) === 'alerta');
+  // Avanzar (con "Siguiente", el stepper o el panel lateral) exige haber completado lo obligatorio de cada paso que se
+  // deja atras; retroceder siempre se puede, y "Guardar borrador" sigue sin exigirlo. Si hay un paso incompleto en el
+  // camino, se queda (o vuelve) en ese paso y se avisa que le falta.
+  const [intentoAvanzar, setIntentoAvanzar] = useState(null);
+  const pasoBloqueante = (destinoKey) => {
+    const destinoIdx = pasos.findIndex((p) => p.key === destinoKey);
+    return destinoIdx > pasoIdx ? pasos.slice(pasoIdx, destinoIdx).find((p) => pendientesPorPaso[p.key].length > 0) : undefined;
+  };
   const irAPaso = (key) => {
+    const bloqueante = pasoBloqueante(key);
+    if (bloqueante) {
+      setIntentoAvanzar(bloqueante.key);
+      key = bloqueante.key;
+    }
     setPasoKey(key);
     setTimeout(() => document.getElementById('form-stepper')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
   const irA = (ancla) => {
-    setPasoKey(PASO_DE_ANCLA[ancla] ?? 'frente');
+    const destino = PASO_DE_ANCLA[ancla] ?? 'frente';
+    if (pasoBloqueante(destino)) {
+      irAPaso(destino);
+      return;
+    }
+    setPasoKey(destino);
     setTimeout(() => document.getElementById(ancla)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
   // Al fallar la validacion, lleva al primer paso con algo pendiente (un borrador solo exige el frente).
@@ -868,6 +886,20 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
       )}
 
       </div>
+
+      {intentoAvanzar === pasoKey && pendientesPorPaso[pasoKey]?.length > 0 && (
+        <div className={f.alerta} role="alert">
+          <AlertTriangle size={18} aria-hidden="true" />
+          <div>
+            <strong>Completa este paso para continuar</strong>
+            <ul>
+              {pendientesPorPaso[pasoKey].map((label) => (
+                <li key={label}>{label}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <div className={f.pie}>
         <Button type="button" variant="secondary" onClick={() => irAPaso(pasos[pasoIdx - 1].key)} disabled={pasoIdx === 0 || guardando != null}>
