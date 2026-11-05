@@ -280,14 +280,15 @@ function puedeListarSolicitudes(usuario, categoria, funcionalidadesPorRol) {
 }
 
 // Autorización real de una acción sobre una solicitud puntual. ADMIN sigue
-// siendo bypass total, igual que siempre.
+// siendo bypass total, igual que siempre -- salvo ENVIAR/REENVIAR (2026-11-05): solo las ejecuta quien registró la
+// solicitud, ni siquiera un admin las envía a nombre de otro (el solicitante firma como REGISTRO en la orden).
 async function puedeEjecutarAccion(solicitud, usuario, accion, funcionalidadesPorRol) {
-  if (usuario.esAdmin) return true;
-
   if (accion === 'ENVIAR' || accion === 'REENVIAR') {
-    if (accion === 'REENVIAR' && solicitud.solicitante_id !== Number(usuario.id)) return false;
-    return tieneCrearSolicitudes(usuario, solicitud.categoria, funcionalidadesPorRol);
+    if (solicitud.solicitante_id !== Number(usuario.id)) return false;
+    return usuario.esAdmin || tieneCrearSolicitudes(usuario, solicitud.categoria, funcionalidadesPorRol);
   }
+
+  if (usuario.esAdmin) return true;
 
   const slot = resolverSlot(accion, solicitud.estado, solicitud.categoria);
   if (!slot) return false;
