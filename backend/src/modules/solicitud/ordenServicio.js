@@ -28,6 +28,7 @@ const PDFDocument = require('pdfkit');
 const asyncHandler = require('../../utils/asyncHandler');
 const ApiError = require('../../utils/ApiError');
 const Solicitud = require('./solicitud.model');
+const HistorialSolicitud = require('./historialSolicitud.model');
 const Usuario = require('../usuario/usuario.model');
 const Tercero = require('../tercero/tercero.model');
 const Frente = require('../frente/frente.model');
@@ -39,6 +40,9 @@ const CuadroComparativoItem = require('./cuadroComparativoItem.model');
 const { getRolesPorCodigo } = require('../../utils/permisos');
 
 const LOGO_PATH = path.join(__dirname, '../../assets/aed-logo.png');
+
+// Nombre que firma la casilla APROBO cuando el Gerente de Compras ya aprobó (APROBAR_GERENTE_COMPRAS).
+const FIRMANTE_GERENTE_COMPRAS = 'Didier Moreno';
 
 // Datos FIJOS de la empresa compradora (Promotora Barlovento del Mar) --
 // fieles a la plantilla real que compartió el usuario. Mismo criterio que
@@ -448,12 +452,29 @@ const generarOrdenServicio = asyncHandler(async (req, res) => {
     doc.addPage();
     y = PAGE_MARGIN;
   }
+  // REGISTRO = quien hizo la solicitud; REVISO = quien aprobó Controles — Proyección (el último que ejecutó
+  // APROBAR_PROYECCION); APROBO = Gerente de Compras, solo si ya firmó. Sin firmante, la casilla queda en blanco.
+  const aprobacionProyeccion = await HistorialSolicitud.findOne({
+    where: { solicitud_id: solicitud.id, accion: 'APROBAR_PROYECCION' },
+    include: [{ model: Usuario, as: 'usuario', attributes: ['nombre', 'cargo'] }],
+    order: [['id', 'DESC']],
+  });
+  const firmas = {
+    REGISTRO: sol?.nombre ? { nombre: sol.nombre, cargo: sol.cargo } : null,
+    REVISO: aprobacionProyeccion?.usuario?.nombre ? { nombre: aprobacionProyeccion.usuario.nombre, cargo: aprobacionProyeccion.usuario.cargo } : null,
+    APROBO: solicitud.fecha_aprobacion_gerente_compras ? { nombre: FIRMANTE_GERENTE_COMPRAS, cargo: 'Gerente de Compras' } : null,
+  };
   ['REGISTRO', 'REVISO', 'APROBO'].forEach((label, i) => {
     const fx = left + i * footerColW;
     fillRect(doc, fx, y, footerColW, footerHeaderH, COLOR_BLUE);
     strokeRect(doc, fx, y, footerColW, footerHeaderH);
     cellText(doc, label, fx, y + 4, footerColW, { bold: true, size: 8, align: 'center', color: '#FFFFFF' });
     strokeRect(doc, fx, y + footerHeaderH, footerColW, footerBodyH);
+    const firma = firmas[label];
+    if (firma) {
+      cellText(doc, firma.nombre, fx, y + footerHeaderH + 12, footerColW, { bold: true, size: 10, align: 'center' });
+      if (firma.cargo) cellText(doc, firma.cargo, fx, y + footerHeaderH + 27, footerColW, { size: 7, align: 'center', color: '#555555' });
+    }
   });
 
   doc.end();
