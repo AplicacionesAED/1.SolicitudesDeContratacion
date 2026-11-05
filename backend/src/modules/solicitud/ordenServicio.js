@@ -452,15 +452,22 @@ const generarOrdenServicio = asyncHandler(async (req, res) => {
     doc.addPage();
     y = PAGE_MARGIN;
   }
-  // REGISTRO = quien hizo la solicitud; REVISO = quien aprobó Controles — Proyección (el último que ejecutó
+  // REGISTRO = quien diligenció y envió la solicitud (el último ENVIAR/REENVIAR del historial; si no hay, el solicitante);
+  // REVISO = quien aprobó Controles — Proyección (el último que ejecutó
   // APROBAR_PROYECCION); APROBO = Gerente de Compras, solo si ya firmó. Sin firmante, la casilla queda en blanco.
   const aprobacionProyeccion = await HistorialSolicitud.findOne({
     where: { solicitud_id: solicitud.id, accion: 'APROBAR_PROYECCION' },
     include: [{ model: Usuario, as: 'usuario', attributes: ['nombre', 'cargo'] }],
     order: [['id', 'DESC']],
   });
+  const envio = await HistorialSolicitud.findOne({
+    where: { solicitud_id: solicitud.id, accion: ['ENVIAR', 'REENVIAR'] },
+    include: [{ model: Usuario, as: 'usuario', attributes: ['nombre', 'cargo'] }],
+    order: [['id', 'DESC']],
+  });
+  const quienEnvio = envio?.usuario ?? sol;
   const firmas = {
-    REGISTRO: sol?.nombre ? { nombre: sol.nombre, cargo: sol.cargo } : null,
+    REGISTRO: quienEnvio?.nombre ? { nombre: quienEnvio.nombre, cargo: quienEnvio.cargo } : null,
     REVISO: aprobacionProyeccion?.usuario?.nombre ? { nombre: aprobacionProyeccion.usuario.nombre, cargo: aprobacionProyeccion.usuario.cargo } : null,
     APROBO: solicitud.fecha_aprobacion_gerente_compras ? { nombre: FIRMANTE_GERENTE_COMPRAS, cargo: 'Gerente de Compras' } : null,
   };
