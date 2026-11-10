@@ -588,7 +588,10 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   // deja atras; retroceder siempre se puede, y "Guardar borrador" sigue sin exigirlo. Si hay un paso incompleto en el
   // camino, se queda (o vuelve) en ese paso y se avisa que le falta.
   const [intentoAvanzar, setIntentoAvanzar] = useState(null);
+  // TEMPORAL (pruebas, 2026-11-10): BLOQUEAR_AVANCE_PASOS = false permite avanzar sin completar el paso. Volver a true para reactivarlo.
+  const BLOQUEAR_AVANCE_PASOS = false;
   const pasoBloqueante = (destinoKey) => {
+    if (!BLOQUEAR_AVANCE_PASOS) return undefined;
     const destinoIdx = pasos.findIndex((p) => p.key === destinoKey);
     return destinoIdx > pasoIdx ? pasos.slice(pasoIdx, destinoIdx).find((p) => pendientesPorPaso[p.key].length > 0) : undefined;
   };
