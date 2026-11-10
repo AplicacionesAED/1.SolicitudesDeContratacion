@@ -830,6 +830,7 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
           value={cuadroComparativo}
           onChange={setCuadroComparativo}
           proveedorUnico={categoriaEfectiva === 'DIRECTA'}
+          sinIva={form.tipoContrato === 'TRANSPORTE'}
           nombreProveedorUnico={terceroSeleccionado?.razonSocial ?? ''}
         />
         {errores.cuadroComparativo && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.cuadroComparativo}</p>}

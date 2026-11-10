@@ -196,8 +196,11 @@ function tabButtonStyle(activo) {
 // + `nombreProveedorUnico={terceroSeleccionado?.razonSocial}` cuando
 // `categoriaEfectiva === 'DIRECTA'` -- en Indirecta el componente sigue
 // exactamente igual (múltiples proveedores, nombre editable a mano).
-export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = false, nombreProveedorUnico = '' }) {
+// `sinIva` (2026-11-10): el tipo de contrato TRANSPORTE no lleva IVA -- se oculta el campo "IVA sobre utilidad" y su
+// valor, y el % se fuerza a 0 (así el total y lo que se guarda no lo incluyen).
+export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = false, nombreProveedorUnico = '', sinIva = false }) {
   const proveedores = value.proveedores ?? [];
+  const camposAiu = sinIva ? CAMPOS_AIU.filter(([campoPct]) => campoPct !== 'ivaUtilidadPct') : CAMPOS_AIU;
   const items = value.items ?? [];
   const [tabPedido, setTabPedido] = useState(null);
   // Si el proveedor pedido ya no existe (se quitó) o todavía no se eligió
@@ -205,6 +208,12 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
   // en cada render.
   const tabActivo = proveedores.some((p) => p.clientId === tabPedido) ? tabPedido : proveedores[0]?.clientId ?? null;
   const proveedorActivo = proveedorUnico ? proveedores[0] ?? null : proveedores.find((p) => p.clientId === tabActivo) ?? null;
+
+  useEffect(() => {
+    if (!sinIva || !proveedores.some((p) => Number(p.ivaUtilidadPct) !== 0)) return;
+    onChange({ ...value, proveedores: proveedores.map((p) => ({ ...p, ivaUtilidadPct: 0 })) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sinIva, proveedores]);
 
   // Garantiza que en modo `proveedorUnico` SIEMPRE haya EXACTAMENTE un
   // proveedor, con el nombre sincronizado al Tercero elegido como
@@ -621,7 +630,7 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
             </div>
 
             <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
-              {CAMPOS_AIU.map(([campoPct, , label]) => (
+              {camposAiu.map(([campoPct, , label]) => (
                 <Field key={campoPct} className="fieldMd" label={`${label} (%)`}>
                   {(p) => <TextInput {...p} type="number" value={proveedorActivo[campoPct]} onChange={(e) => updateProveedor(proveedorActivo.clientId, campoPct, e.target.value)} />}
                 </Field>
@@ -633,7 +642,7 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
               return (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-md) var(--space-xl)', padding: 'var(--space-md)', background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-data-size)' }}>
                   <span>Subtotal: <strong>{formatCurrency(totales.subtotal)}</strong></span>
-                  {CAMPOS_AIU.map(([campoPct, campoValor, label]) => (
+                  {camposAiu.map(([campoPct, campoValor, label]) => (
                     <span key={campoPct}>{label}: <strong>{formatCurrency(totales[campoValor])}</strong></span>
                   ))}
                   <span>Costo total: <strong>{formatCurrency(totales.costoTotal)}</strong></span>

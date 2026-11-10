@@ -516,6 +516,8 @@ export function SolicitudDetallePage() {
             const proveedores = solicitud.cuadroComparativo.proveedores;
             const idActivo = ccTab ?? String(proveedores[0]?.id);
             const proveedorActivo = proveedores.find((p) => String(p.id) === idActivo);
+            // TRANSPORTE no lleva IVA (2026-11-10): se oculta "IVA sobre utilidad".
+            const camposAiu = solicitud.tipoContrato === 'TRANSPORTE' ? CAMPOS_AIU.filter(([campoPct]) => campoPct !== 'ivaUtilidadPct') : CAMPOS_AIU;
             if (!proveedorActivo) return null;
             const clientIdActivo = String(proveedorActivo.id);
             // Mismo cálculo que el editor -- calcularTotalesProveedor lee
@@ -552,7 +554,7 @@ export function SolicitudDetallePage() {
                     para que agregar un campo de AIU nuevo no requiera tocar
                     las dos vistas por separado. */}
                 <div style={{ display: 'flex', gap: 'var(--space-lg)', flexWrap: 'wrap', marginTop: 'var(--space-sm)' }}>
-                  {CAMPOS_AIU.map(([campoPct, , label]) => (
+                  {camposAiu.map(([campoPct, , label]) => (
                     <span key={campoPct} style={{ fontSize: 'var(--text-data-size)' }}>
                       {label}: <strong>{proveedorActivo[campoPct] ?? 0}%</strong>
                     </span>
@@ -590,7 +592,7 @@ export function SolicitudDetallePage() {
                     arriba. */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-md) var(--space-xl)', marginTop: 'var(--space-sm)', padding: 'var(--space-md)', background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-data-size)' }}>
                   <span>Subtotal: <strong>{formatCurrency(totales.subtotal)}</strong></span>
-                  {CAMPOS_AIU.map(([campoPct, campoValor, label]) => (
+                  {camposAiu.map(([campoPct, campoValor, label]) => (
                     <span key={campoPct}>{label}: <strong>{formatCurrency(totales[campoValor])}</strong></span>
                   ))}
                   <span>Costo total: <strong>{formatCurrency(totales.costoTotal)}</strong></span>
