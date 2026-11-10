@@ -196,11 +196,11 @@ function tabButtonStyle(activo) {
 // + `nombreProveedorUnico={terceroSeleccionado?.razonSocial}` cuando
 // `categoriaEfectiva === 'DIRECTA'` -- en Indirecta el componente sigue
 // exactamente igual (múltiples proveedores, nombre editable a mano).
-// `sinIva` (2026-11-10): el tipo de contrato TRANSPORTE no lleva IVA -- se oculta el campo "IVA sobre utilidad" y su
-// valor, y el % se fuerza a 0 (así el total y lo que se guarda no lo incluyen).
+// `sinIva` (2026-11-10): el tipo de contrato TRANSPORTE no lleva IVA ni AIU (Administración/Imprevisto/Utilidad/IVA sobre
+// utilidad) -- se ocultan esos campos y sus valores, y los % se fuerzan a 0 (así el total y lo que se guarda no los incluyen).
 export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = false, nombreProveedorUnico = '', sinIva = false }) {
   const proveedores = value.proveedores ?? [];
-  const camposAiu = sinIva ? CAMPOS_AIU.filter(([campoPct]) => campoPct !== 'ivaUtilidadPct') : CAMPOS_AIU;
+  const camposAiu = sinIva ? [] : CAMPOS_AIU;
   const items = value.items ?? [];
   const [tabPedido, setTabPedido] = useState(null);
   // Si el proveedor pedido ya no existe (se quitó) o todavía no se eligió
@@ -210,8 +210,8 @@ export function CuadroComparativoBuilder({ value, onChange, proveedorUnico = fal
   const proveedorActivo = proveedorUnico ? proveedores[0] ?? null : proveedores.find((p) => p.clientId === tabActivo) ?? null;
 
   useEffect(() => {
-    if (!sinIva || !proveedores.some((p) => Number(p.ivaUtilidadPct) !== 0)) return;
-    onChange({ ...value, proveedores: proveedores.map((p) => ({ ...p, ivaUtilidadPct: 0 })) });
+    if (!sinIva || !proveedores.some((p) => CAMPOS_AIU.some(([campoPct]) => Number(p[campoPct]) !== 0))) return;
+    onChange({ ...value, proveedores: proveedores.map((p) => ({ ...p, administracionPct: 0, imprevistoPct: 0, utilidadPct: 0, ivaUtilidadPct: 0 })) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sinIva, proveedores]);
 

@@ -516,8 +516,8 @@ export function SolicitudDetallePage() {
             const proveedores = solicitud.cuadroComparativo.proveedores;
             const idActivo = ccTab ?? String(proveedores[0]?.id);
             const proveedorActivo = proveedores.find((p) => String(p.id) === idActivo);
-            // TRANSPORTE no lleva IVA (2026-11-10): se oculta "IVA sobre utilidad".
-            const camposAiu = solicitud.tipoContrato === 'TRANSPORTE' ? CAMPOS_AIU.filter(([campoPct]) => campoPct !== 'ivaUtilidadPct') : CAMPOS_AIU;
+            // TRANSPORTE no lleva IVA ni AIU (2026-11-10): se ocultan Administración/Imprevisto/Utilidad/IVA sobre utilidad.
+            const camposAiu = solicitud.tipoContrato === 'TRANSPORTE' ? [] : CAMPOS_AIU;
             if (!proveedorActivo) return null;
             const clientIdActivo = String(proveedorActivo.id);
             // Mismo cálculo que el editor -- calcularTotalesProveedor lee

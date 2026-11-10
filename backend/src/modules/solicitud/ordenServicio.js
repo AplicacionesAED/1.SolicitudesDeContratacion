@@ -108,12 +108,12 @@ function calcularValorTotalItem(item, proveedorId) {
   return cantidad * unitario;
 }
 
-// `sinIva`: el tipo de contrato TRANSPORTE no lleva IVA (2026-11-10), se ignora el % guardado.
+// `sinIva`: el tipo de contrato TRANSPORTE no lleva IVA ni AIU (2026-11-10), se ignoran los % guardados.
 function calcularTotalesProveedor(items, proveedor, sinIva = false) {
   const subtotal = items.reduce((acc, it) => acc + calcularValorTotalItem(it, proveedor.id), 0);
-  const administracion = subtotal * ((Number(proveedor.administracion_pct) || 0) / 100);
-  const imprevisto = subtotal * ((Number(proveedor.imprevisto_pct) || 0) / 100);
-  const utilidad = subtotal * ((Number(proveedor.utilidad_pct) || 0) / 100);
+  const administracion = sinIva ? 0 : subtotal * ((Number(proveedor.administracion_pct) || 0) / 100);
+  const imprevisto = sinIva ? 0 : subtotal * ((Number(proveedor.imprevisto_pct) || 0) / 100);
+  const utilidad = sinIva ? 0 : subtotal * ((Number(proveedor.utilidad_pct) || 0) / 100);
   const ivaUtilidad = sinIva ? 0 : utilidad * ((Number(proveedor.iva_utilidad_pct) || 0) / 100);
   const costoTotal = subtotal + administracion + imprevisto + utilidad + ivaUtilidad;
   return { subtotal, administracion, imprevisto, utilidad, ivaUtilidad, costoTotal };
@@ -361,11 +361,15 @@ const generarOrdenServicio = asyncHandler(async (req, res) => {
   const totalsValW = totalsW - totalsLabelW;
   const totalRows = [
     ['SUBTOTAL', totales.subtotal],
-    [`ADMINISTRACION (${proveedor?.administracion_pct ?? 0}%)`, totales.administracion],
-    [`IMPREVISTOS (${proveedor?.imprevisto_pct ?? 0}%)`, totales.imprevisto],
-    [`UTILIDAD (${proveedor?.utilidad_pct ?? 0}%)`, totales.utilidad],
-    // El tipo de contrato TRANSPORTE no lleva IVA (2026-11-10): se omite la fila.
-    ...(solicitud.tipo_contrato === 'TRANSPORTE' ? [] : [[`IVA/UTILIDAD (${proveedor?.iva_utilidad_pct ?? 0}%)`, totales.ivaUtilidad]]),
+    // El tipo de contrato TRANSPORTE no lleva IVA ni AIU (2026-11-10): solo Subtotal y Total.
+    ...(solicitud.tipo_contrato === 'TRANSPORTE'
+      ? []
+      : [
+          [`ADMINISTRACION (${proveedor?.administracion_pct ?? 0}%)`, totales.administracion],
+          [`IMPREVISTOS (${proveedor?.imprevisto_pct ?? 0}%)`, totales.imprevisto],
+          [`UTILIDAD (${proveedor?.utilidad_pct ?? 0}%)`, totales.utilidad],
+          [`IVA/UTILIDAD (${proveedor?.iva_utilidad_pct ?? 0}%)`, totales.ivaUtilidad],
+        ]),
   ];
   y += 4;
   for (const [label, value] of totalRows) {
