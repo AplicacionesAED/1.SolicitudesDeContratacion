@@ -6,8 +6,8 @@
   --color-surface: #fff;
   --color-border-input: color-mix(in srgb, var(--color-primary) 55%, white);
   /* Alto de la pantalla menos topbar (68px + margen) y el padding vertical del area de scroll: el formulario ocupa
-     siempre toda la pantalla y el panel Anterior/Siguiente (`.pie`, margin-top: auto) queda en el mismo lugar en
-     todos los pasos, sin importar cuanto contenido tenga cada uno. */
+     siempre toda la pantalla y el panel Anterior/Siguiente (`.pie`, margin-top: auto, dentro de `.main` con flex: 1)
+     queda en el mismo lugar en todos los pasos, sin importar cuanto contenido tenga cada uno. */
   min-height: calc(100dvh - 76px - 2 * var(--space-xl));
 }
 
@@ -27,6 +27,8 @@
   flex-direction: column;
   gap: var(--space-lg);
   min-width: 0;
+  /* Ocupa el alto que sobra de `.root` (ver su min-height): empuja el panel `.pie` al fondo de la pantalla. */
+  flex: 1;
 }
 
 /* Otrosi: indicador de pasos. */
