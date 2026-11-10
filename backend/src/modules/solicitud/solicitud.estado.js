@@ -114,8 +114,10 @@ const cambiarEstado = asyncHandler(async (req, res) => {
       direccion_representante: 'Dirección representante',
       telefono_representante: 'Teléfono representante',
     };
-    const contratista = await Tercero.findByPk(solicitud.tercero_id);
-    const faltantesContratista = Object.entries(DATOS_CONTRATISTA).filter(([campo]) => !String(contratista?.[campo] ?? '').trim()).map(([, label]) => label);
+    // TEMPORAL (pruebas, 2026-11-10): validación de datos del contratista desactivada. Volver a true para reactivarla.
+    const VALIDAR_DATOS_CONTRATISTA = false;
+    const contratista = VALIDAR_DATOS_CONTRATISTA ? await Tercero.findByPk(solicitud.tercero_id) : null;
+    const faltantesContratista = !VALIDAR_DATOS_CONTRATISTA ? [] : Object.entries(DATOS_CONTRATISTA).filter(([campo]) => !String(contratista?.[campo] ?? '').trim()).map(([, label]) => label);
     if (faltantesContratista.length > 0) {
       throw new ApiError(400, `Faltan datos del contratista antes de poder enviar la solicitud: ${faltantesContratista.join(', ')}.`);
     }

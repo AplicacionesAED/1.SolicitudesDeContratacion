@@ -238,7 +238,10 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   const terceroSeleccionado = useMemo(() => terceros.find((t) => t.id === form.terceroId) ?? null, [terceros, form.terceroId]);
 
   // Datos del contratista que aparecen "Sin información": para enviar tienen que estar todos (no aplica a un histórico).
-  const faltantesContratista = terceroSeleccionado && !esHistorico
+  // TEMPORAL (pruebas, 2026-11-10): VALIDAR_DATOS_CONTRATISTA = false desactiva esta exigencia (el backend tiene su espejo en
+  // solicitud.estado.js). Volver a true para reactivarla.
+  const VALIDAR_DATOS_CONTRATISTA = false;
+  const faltantesContratista = VALIDAR_DATOS_CONTRATISTA && terceroSeleccionado && !esHistorico
     ? CAMPOS_CONTRATISTA.filter(([, campo]) => !String(terceroSeleccionado[campo] ?? '').trim()).map(([label]) => label)
     : [];
   // El filtrado por texto ahora vive DENTRO de <Combobox> (su propio query
