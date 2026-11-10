@@ -550,7 +550,7 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
     { ok: form.frentesIds.length > 0, label: 'Frente(s) de trabajo', ancla: 'sec-frentes' },
     { ok: Boolean(form.terceroId), label: 'Contratista', ancla: 'sec-contratista' },
     { ok: faltantesContratista.length === 0, label: `Datos del contratista (${faltantesContratista.join(', ')})`, ancla: 'sec-contratista' },
-    ...(tratarComoContrato ? [{ ok: Boolean(form.tipoContrato), label: 'Tipo de contrato', ancla: 'sec-contratista' }] : []),
+    ...(tratarComoContrato ? [{ ok: Boolean(form.tipoContrato), label: 'Tipo de contrato', ancla: 'sec-cuadro' }] : []),
     { ok: form.descripcionActividad.trim().length >= 50, label: 'Objeto', detalle: `${Math.min(form.descripcionActividad.trim().length, 50)}/50 caracteres`, ancla: 'sec-info' },
     { ok: Boolean(form.plazoEjecucion.trim()), label: 'Plazo de ejecución', ancla: 'sec-info' },
     { ok: Boolean(form.formaPago.trim()), label: 'Forma de pago', ancla: 'sec-info' },
@@ -707,30 +707,6 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
           {errores.terceroId && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.terceroId}</p>}
         </div>
 
-        {tratarComoContrato && (
-          <div className={f.bloque}>
-            <p className={f.bloqueTitulo}>Tipo de contrato</p>
-            <div className={f.opciones}>
-              {/* Pedido explícito del usuario: "en los contratos directos no
-                  existen los contratos de tipo Diseño" -- Diseño solo aplica
-                  a Indirecta. Esta sección ahora también se muestra para
-                  Orden de Servicio en Directa (`tratarComoContrato`).
-                  2026-09-21: Directa ya no tiene un solo tipo -- el radio
-                  itera los 6 (`TODO_COSTO`,
-                  `SUMINISTRO_MATERIALES`/`MANO_OBRA`/`SERVICIOS`/
-                  `TRANSPORTE`/`ALQUILER`); igual exige clic explícito. Los
-                  códigos vienen de tiposContratoDisponibles (arriba). */}
-              {tiposContratoDisponibles.map((opt) => (
-                <label key={opt} className={`${f.opcion} ${form.tipoContrato === opt ? f.opcionActiva : ''}`}>
-                  <input type="radio" checked={form.tipoContrato === opt} onChange={() => setForm({ ...form, tipoContrato: opt })} />
-                  {tipoContratoLabel(opt)}
-                </label>
-              ))}
-            </div>
-            {errores.tipoContrato && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.tipoContrato}</p>}
-          </div>
-        )}
-
         {terceroSeleccionado && (
           <div className={f.bloque}>
             <p className={f.bloqueTitulo}>Datos del contratista</p>
@@ -821,6 +797,30 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
       <div className={f.panel} hidden={pasoKey !== 'cuadro'}>
       <div id="sec-cuadro" className={styles.section}>
         <h2 className={styles.sectionTitle}>Cuadro Comparativo</h2>
+        {tratarComoContrato && (
+          <div className={f.bloque}>
+            <p className={f.bloqueTitulo}>Tipo de contrato</p>
+            <div className={f.opciones}>
+              {/* Pedido explícito del usuario: "en los contratos directos no
+                  existen los contratos de tipo Diseño" -- Diseño solo aplica
+                  a Indirecta. Esta sección ahora también se muestra para
+                  Orden de Servicio en Directa (`tratarComoContrato`).
+                  2026-09-21: Directa ya no tiene un solo tipo -- el radio
+                  itera los 6 (`TODO_COSTO`,
+                  `SUMINISTRO_MATERIALES`/`MANO_OBRA`/`SERVICIOS`/
+                  `TRANSPORTE`/`ALQUILER`); igual exige clic explícito. Los
+                  códigos vienen de tiposContratoDisponibles (arriba). */}
+              {tiposContratoDisponibles.map((opt) => (
+                <label key={opt} className={`${f.opcion} ${form.tipoContrato === opt ? f.opcionActiva : ''}`}>
+                  <input type="radio" checked={form.tipoContrato === opt} onChange={() => setForm({ ...form, tipoContrato: opt })} />
+                  {tipoContratoLabel(opt)}
+                </label>
+              ))}
+            </div>
+            {errores.tipoContrato && <p style={{ color: 'var(--color-danger-ink)', fontSize: 'var(--text-data-size)' }}>{errores.tipoContrato}</p>}
+          </div>
+        )}
+
         {/* "En Directos no se puede agregar más de un proveedor, debe ser
             uno y debe ser el tercero que se seleccione, que se coloque
             automáticamente" -- pedido explícito del usuario. Acotado a
