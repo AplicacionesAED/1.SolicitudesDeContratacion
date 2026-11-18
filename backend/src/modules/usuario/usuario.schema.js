@@ -25,7 +25,6 @@ const ROLES_LEGACY = [
 const createSchema = z.object({
   nombre: z.string().min(1).max(200),
   email: z.string().email(),
-  password: z.string().min(1),
   roles: z.array(z.string().min(1)).min(1),
   funcionalidades_adicionales: z.array(z.string()).optional(),
   cargo: z.string().max(150).nullable().optional(),
@@ -38,15 +37,13 @@ const updateSchema = z.object({
   funcionalidades_adicionales: z.array(z.string()).optional(),
   cargo: z.string().max(150).nullable().optional(),
   telefono: z.string().max(30).nullable().optional(),
-  password: z.string().min(1).nullable().optional(),
   activo: z.boolean().optional(),
 });
 
-// Acciones masivas desde la lista (2026-10-09). Tope bajo a proposito: generar una contrasena implica un
-// hash bcrypt por cuenta.
+// Acciones masivas desde la lista (2026-10-09).
 const masivoSchema = z.object({
   ids: z.array(z.coerce.number().int().positive()).min(1).max(50),
-  accion: z.enum(['generar-password', 'activar', 'inactivar']),
+  accion: z.enum(['activar', 'inactivar']),
 });
 
 module.exports = { ROLES: ROLES_LEGACY, createSchema, updateSchema, masivoSchema };

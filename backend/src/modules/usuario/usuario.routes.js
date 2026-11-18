@@ -22,7 +22,6 @@ router.post('/', requireAuth, requirePermiso('ver_usuarios'), validate(createSch
 router.post('/masivo', requireAuth, requirePermiso('ver_usuarios'), validate(masivoSchema, 'body'), controller.accionMasiva);
 
 router.get('/:id', requireAuth, requirePermiso('ver_usuarios'), controller.getById);
-router.post('/:id/generar-password', requireAuth, requirePermiso('ver_usuarios'), controller.regenerarPassword);
 router.put('/:id', requireAuth, requirePermiso('ver_usuarios'), validate(updateSchema, 'body'), controller.update);
 router.delete('/:id', requireAuth, requirePermiso('ver_usuarios'), controller.remove);
 // Eliminacion fisica (solo cuentas inactivas); segmento literal, no colisiona con la de arriba.

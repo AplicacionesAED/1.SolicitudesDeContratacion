@@ -26,12 +26,7 @@ export function getUsuario(id) {
   return client.get(`/usuarios/${id}`);
 }
 
-// Genera y GUARDA una contrasena temporal nueva (se devuelve una sola vez).
-export function generarPasswordUsuario(id) {
-  return client.post(`/usuarios/${id}/generar-password`);
-}
-
-// Acciones sobre varias cuentas a la vez: 'generar-password' | 'activar' | 'inactivar'.
+// Acciones sobre varias cuentas a la vez: 'activar' | 'inactivar'.
 export function accionMasivaUsuarios(ids, accion) {
   return client.post('/usuarios/masivo', { ids, accion });
 }

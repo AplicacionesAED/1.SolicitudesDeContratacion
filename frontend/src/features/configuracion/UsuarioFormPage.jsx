@@ -10,7 +10,7 @@ import { Badge } from '../../components/ui/Badge.jsx';
 import { Modal } from '../../components/ui/Modal.jsx';
 import { Checkbox } from '../../components/ui/Checkbox.jsx';
 import { CheckboxGroup } from '../../components/ui/CheckboxGroup.jsx';
-import { createUsuario, generarPasswordUsuario, getUsuario, removeUsuarioDefinitivo, updateUsuario } from '../../api/usuarios.js';
+import { createUsuario, getUsuario, removeUsuarioDefinitivo, updateUsuario } from '../../api/usuarios.js';
 import { listRoles, listFuncionalidadesDisponibles } from '../../api/roles.js';
 import { ROL_LABELS } from '../../utils/permisos.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -18,9 +18,7 @@ import layoutStyles from '../../components/layout/WizardLayout.module.css';
 import { iniciales, fmtFecha, fmtAcceso } from './usuarioUtils.js';
 import styles from './Usuarios.module.css';
 
-const PASSWORD_HELP = 'Mínimo 8 caracteres, incluye una mayúscula, un número y un carácter especial (!@#$%…).';
-
-const VACIO = { nombre: '', email: '', password: '', roles: [], funcionalidades_adicionales: [], cargo: '', telefono: '', activo: true };
+const VACIO = { nombre: '', email: '', roles: [], funcionalidades_adicionales: [], cargo: '', telefono: '', activo: true };
 
 export function UsuarioFormPage() {
   const { id } = useParams();
@@ -38,8 +36,6 @@ export function UsuarioFormPage() {
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [requisitosFaltantes, setRequisitosFaltantes] = useState(null);
-  const [generando, setGenerando] = useState(false);
-  const [passwordGenerada, setPasswordGenerada] = useState(null);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
   const [eliminando, setEliminando] = useState(false);
 
@@ -50,7 +46,7 @@ export function UsuarioFormPage() {
     getUsuario(id)
       .then((res) => {
         setUsuarioEditado(res.data);
-        setForm({ ...VACIO, ...res.data, cargo: res.data.cargo ?? '', telefono: res.data.telefono ?? '', password: '' });
+        setForm({ ...VACIO, ...res.data, cargo: res.data.cargo ?? '', telefono: res.data.telefono ?? '' });
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -71,22 +67,6 @@ export function UsuarioFormPage() {
     [form.roles, form.funcionalidades_adicionales, permisosPorRol]
   );
   const esMismaCuenta = Number(usuarioActual?.id) === Number(usuarioEditado?.id);
-
-  async function handleGenerarPassword() {
-    setGenerando(true);
-    setError(null);
-    setPasswordGenerada(null);
-    try {
-      const res = await generarPasswordUsuario(id);
-      setPasswordGenerada(res.data.password);
-      setField('password', '');
-      setUsuarioEditado((prev) => ({ ...prev, debe_cambiar_password: true }));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setGenerando(false);
-    }
-  }
 
   async function handleEliminarDefinitivo() {
     setEliminando(true);
@@ -118,8 +98,8 @@ export function UsuarioFormPage() {
         cargo: form.cargo || null,
         telefono: form.telefono || null,
       };
-      if (esNuevo) await createUsuario({ ...payload, email: form.email, password: form.password });
-      else await updateUsuario(id, { ...payload, activo: form.activo, ...(form.password ? { password: form.password } : {}) });
+      if (esNuevo) await createUsuario({ ...payload, email: form.email });
+      else await updateUsuario(id, { ...payload, activo: form.activo });
       navigate('/configuracion/usuarios');
     } catch (err) {
       setError(err.details?.formErrors?.join(', ') ?? err.message);
@@ -148,9 +128,6 @@ export function UsuarioFormPage() {
           <div className={layoutStyles.heroSide}>
             <Badge variant={usuarioEditado.activo ? 'success' : 'neutral'} dot={usuarioEditado.activo}>
               {usuarioEditado.activo ? 'Activo' : 'Inactivo'}
-            </Badge>
-            <Badge variant={usuarioEditado.debe_cambiar_password ? 'warning' : 'success'}>
-              {usuarioEditado.debe_cambiar_password ? 'Primer ingreso pendiente' : 'Primer ingreso completado'}
             </Badge>
           </div>
         </section>
@@ -248,7 +225,7 @@ export function UsuarioFormPage() {
           <section className={styles.sectionCard}>
             <div>
               <h2 className={styles.sectionTitle}>Cuenta de Microsoft</h2>
-              <p className={styles.sectionHint}>La persona vincula su cuenta desde su perfil; desde aquí solo se consulta.</p>
+              <p className={styles.sectionHint}>La cuenta se vincula sola en el primer ingreso con el correo de Outlook con el que se creó el usuario; desde aquí solo se consulta.</p>
             </div>
             {usuarioEditado.microsoft_id ? (
               <div className={styles.permisosChips}>
@@ -258,46 +235,10 @@ export function UsuarioFormPage() {
                 <span className={styles.sectionHint}>{usuarioEditado.microsoft_email ?? 'Cuenta vinculada'}</span>
               </div>
             ) : (
-              <p className={styles.permisosVacio}>Todavía no vinculó su cuenta de Microsoft; entra con correo y contraseña.</p>
+              <p className={styles.permisosVacio}>Todavía no ha ingresado con Microsoft; la cuenta se vincula sola en su primer ingreso.</p>
             )}
           </section>
         )}
-
-        <section className={styles.sectionCard}>
-          <div>
-            <h2 className={styles.sectionTitle}>Contraseña</h2>
-            <p className={styles.sectionHint}>
-              {esNuevo
-                ? PASSWORD_HELP
-                : usuarioEditado?.debe_cambiar_password
-                  ? 'Esta persona aún no ha cambiado su contraseña inicial.'
-                  : 'Deja el campo en blanco para conservar la contraseña actual.'}
-            </p>
-          </div>
-
-          {passwordGenerada && (
-            <div className={styles.passwordBanner} role="status">
-              Contraseña temporal generada: <span className={styles.passwordValue}>{passwordGenerada}</span> — cópiala ahora, no se volverá a mostrar. Se le pedirá cambiarla en el primer inicio de sesión.
-            </div>
-          )}
-
-          <div className={styles.row}>
-            <Field className={styles.fieldLg} label={esNuevo ? 'Contraseña' : 'Nueva contraseña'} required={esNuevo} error={fieldErrors.password?.[0]} helper={esNuevo ? undefined : PASSWORD_HELP}>
-              {(fp) => <TextInput {...fp} type="password" value={form.password} onChange={(e) => setField('password', e.target.value)} required={esNuevo} />}
-            </Field>
-
-            {!esNuevo && (
-              <div className={styles.actionRow}>
-                <span className={styles.actionRowSpacer} aria-hidden="true">
-                  &nbsp;
-                </span>
-                <Button type="button" variant="secondary" onClick={handleGenerarPassword} disabled={generando}>
-                  {generando ? 'Generando...' : 'Generar contraseña aleatoria'}
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
 
         <div className={styles.actions}>
           <Button type="button" variant="secondary" onClick={() => navigate('/configuracion/usuarios')}>

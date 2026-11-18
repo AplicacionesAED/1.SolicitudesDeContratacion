@@ -18,7 +18,6 @@ const removeDefinitivo = asyncHandler(async (req, res) => {
   await service.removeDefinitivo(req.params.id, req.usuario.id);
   noContent(res);
 });
-const regenerarPassword = asyncHandler(async (req, res) => ok(res, await service.regenerarPassword(req.params.id)));
 const accionMasiva = asyncHandler(async (req, res) => ok(res, await service.accionMasiva(req.body, req.usuario.id)));
 
-module.exports = { getMe, list, create, getById, update, remove, removeDefinitivo, regenerarPassword, accionMasiva };
+module.exports = { getMe, list, create, getById, update, remove, removeDefinitivo, accionMasiva };

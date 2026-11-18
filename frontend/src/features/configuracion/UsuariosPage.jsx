@@ -14,17 +14,12 @@ import { ariaSort, useSortableTable } from '../../hooks/useSortableTable.js';
 import { listUsuarios, accionMasivaUsuarios } from '../../api/usuarios.js';
 import { listRoles } from '../../api/roles.js';
 import { ROL_LABELS } from '../../utils/permisos.js';
-import { iniciales, fmtAcceso, descargarCsv } from './usuarioUtils.js';
+import { iniciales, fmtAcceso } from './usuarioUtils.js';
 import styles from './Usuarios.module.css';
 
 const PAGE_SIZE = 20;
 
 const ACCIONES = {
-  'generar-password': {
-    titulo: 'Generar contraseñas temporales',
-    texto: 'Se reemplazará la contraseña de cada cuenta por una temporal nueva y se les pedirá cambiarla al entrar. Las contraseñas se mostrarán una sola vez.',
-    boton: 'Generar contraseñas',
-  },
   activar: { titulo: 'Activar cuentas', texto: 'Las cuentas seleccionadas podrán iniciar sesión.', boton: 'Activar' },
   inactivar: { titulo: 'Inactivar cuentas', texto: 'Las cuentas seleccionadas no podrán iniciar sesión hasta que las actives de nuevo.', boton: 'Inactivar' },
 };
@@ -48,13 +43,11 @@ export function UsuariosPage() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState(searchParams.get('rol') ?? ''); // ?rol= viene del enlace "Cuentas" de Roles
   const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroIngreso, setFiltroIngreso] = useState('');
   const [filtroMicrosoft, setFiltroMicrosoft] = useState('');
   const [page, setPage] = useState(1);
   const [seleccion, setSeleccion] = useState(() => new Set());
   const [confirmar, setConfirmar] = useState(null); // clave de ACCIONES
   const [ejecutando, setEjecutando] = useState(false);
-  const [resultado, setResultado] = useState(null); // respuesta de la accion masiva
   const [avisoMasivo, setAvisoMasivo] = useState(null);
 
   useEffect(() => {
@@ -85,13 +78,11 @@ export function UsuariosPage() {
       if (q && !`${u.nombre} ${u.email} ${u.cargo ?? ''}`.toLowerCase().includes(q)) return false;
       if (filtroRol && !(u.roles ?? []).includes(filtroRol)) return false;
       if (filtroEstado && String(u.activo) !== filtroEstado) return false;
-      if (filtroIngreso === 'pendiente' && !u.debe_cambiar_password) return false;
-      if (filtroIngreso === 'completado' && u.debe_cambiar_password) return false;
       if (filtroMicrosoft === 'vinculada' && !u.microsoft_id) return false;
       if (filtroMicrosoft === 'sin' && u.microsoft_id) return false;
       return true;
     });
-  }, [todos, busqueda, filtroRol, filtroEstado, filtroIngreso, filtroMicrosoft]);
+  }, [todos, busqueda, filtroRol, filtroEstado, filtroMicrosoft]);
 
   const { sortedRows, sort, toggleSort } = useSortableTable(filtrados, VALORES_ORDEN);
   const usuarios = sortedRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -113,8 +104,7 @@ export function UsuariosPage() {
       const res = await accionMasivaUsuarios([...seleccion], confirmar);
       const accion = confirmar;
       setConfirmar(null);
-      if (accion === 'generar-password') setResultado(res.data);
-      else setAvisoMasivo(`${res.data.procesados} cuenta(s) ${accion === 'activar' ? 'activadas' : 'inactivadas'}.`);
+      setAvisoMasivo(`${res.data.procesados} cuenta(s) ${accion === 'activar' ? 'activadas' : 'inactivadas'}.`);
       cargar();
     } catch (err) {
       setConfirmar(null);
@@ -128,12 +118,11 @@ export function UsuariosPage() {
     setter(event.target.value);
     setPage(1);
   };
-  const hayFiltros = busqueda !== '' || filtroRol !== '' || filtroEstado !== '' || filtroIngreso !== '' || filtroMicrosoft !== '';
+  const hayFiltros = busqueda !== '' || filtroRol !== '' || filtroEstado !== '' || filtroMicrosoft !== '';
   const limpiar = () => {
     setBusqueda('');
     setFiltroRol('');
     setFiltroEstado('');
-    setFiltroIngreso('');
     setFiltroMicrosoft('');
     setPage(1);
   };
@@ -142,7 +131,6 @@ export function UsuariosPage() {
     { valor: todos.length, label: 'Cuentas' },
     { valor: todos.filter((u) => u.activo).length, label: 'Activas' },
     { valor: todos.filter((u) => !u.activo).length, label: 'Inactivas' },
-    { valor: todos.filter((u) => u.debe_cambiar_password).length, label: 'Sin primer ingreso' },
     { valor: todos.filter((u) => u.microsoft_id).length, label: 'Con Microsoft' },
   ];
 
@@ -200,14 +188,6 @@ export function UsuariosPage() {
           </select>
         </label>
         <label className={styles.filterField}>
-          <span>Primer ingreso</span>
-          <select className={styles.control} value={filtroIngreso} onChange={cambiarFiltro(setFiltroIngreso)}>
-            <option value="">Todos</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="completado">Completado</option>
-          </select>
-        </label>
-        <label className={styles.filterField}>
           <span>Microsoft</span>
           <select className={styles.control} value={filtroMicrosoft} onChange={cambiarFiltro(setFiltroMicrosoft)}>
             <option value="">Todos</option>
@@ -231,9 +211,6 @@ export function UsuariosPage() {
       {seleccion.size > 0 && (
         <div className={styles.bulkBar} role="region" aria-label="Acciones masivas">
           <span className={styles.bulkCount}>{seleccion.size} seleccionada(s)</span>
-          <Button variant="secondary" onClick={() => setConfirmar('generar-password')}>
-            Generar contraseñas
-          </Button>
           <Button variant="secondary" onClick={() => setConfirmar('activar')}>
             Activar
           </Button>
@@ -306,7 +283,6 @@ export function UsuariosPage() {
                   </td>
                   <td className={`${styles.dateCell} ${u.ultima_conexion ? '' : styles.muted}`}>
                     {fmtAcceso(u.ultima_conexion) ?? 'Nunca'}
-                    {u.debe_cambiar_password && <span className={styles.primerIngreso}>Primer ingreso pendiente</span>}
                   </td>
                   <td>
                     <div className={styles.rolesCell}>
@@ -350,52 +326,6 @@ export function UsuariosPage() {
           <p>
             {ACCIONES[confirmar].texto} <strong>{seleccion.size} cuenta(s)</strong> seleccionada(s). Tu propia cuenta nunca se modifica.
           </p>
-        )}
-      </Modal>
-
-      <Modal
-        open={!!resultado}
-        onClose={() => setResultado(null)}
-        title="Contraseñas temporales generadas"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => descargarCsv('contrasenas-temporales.csv', [['Nombre', 'Correo', 'Contraseña temporal'], ...(resultado?.resultados ?? []).map((f) => [f.nombre, f.email, f.password])])}
-            >
-              Descargar CSV
-            </Button>
-            <Button variant="primary" onClick={() => setResultado(null)}>
-              Listo
-            </Button>
-          </>
-        }
-      >
-        {resultado && (
-          <div className={styles.resultadoModal}>
-            <p>
-              Cópialas o descárgalas ahora: <strong>no se volverán a mostrar</strong>. A cada persona se le pedirá cambiarla al entrar.
-            </p>
-            <table className={styles.resultadoTabla}>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>Contraseña</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultado.resultados.map((fila) => (
-                  <tr key={fila.id}>
-                    <td>{fila.nombre}</td>
-                    <td>{fila.email}</td>
-                    <td className={styles.passwordValue}>{fila.password}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {resultado.omitidos.length > 0 && <p className={styles.sectionHint}>Omitidas: {resultado.omitidos.map((o) => `${o.email ?? '#' + o.id} (${o.motivo})`).join(', ')}.</p>}
-          </div>
         )}
       </Modal>
     </div>

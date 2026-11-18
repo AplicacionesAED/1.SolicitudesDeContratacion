@@ -3,7 +3,7 @@
 // expone `hashed_password` en la respuesta (`_enrich`).
 const ApiError = require('../../utils/ApiError');
 const { hashPassword } = require('../../utils/security');
-const { validatePassword, generateRandomPassword } = require('../../utils/passwordRules');
+const { generateRandomPassword } = require('../../utils/passwordRules');
 const { getRolesFuncionalidades, getRolesPorCodigo } = require('../../utils/permisos');
 const Usuario = require('./usuario.model');
 
@@ -47,18 +47,18 @@ async function list() {
 async function create(data) {
   const existente = await Usuario.findOne({ where: { email: data.email.toLowerCase() } });
   if (existente) throw new ApiError(400, 'Ya existe un usuario con este email');
-  validatePassword(data.password);
 
+  // Sin login por contraseña (2026-11-18): la columna es NOT NULL, así que se guarda el hash de una clave aleatoria que
+  // nadie conoce; el ingreso es solo por Microsoft (ver auth.azure.js).
   const usuario = await Usuario.create({
     email: data.email,
     nombre: data.nombre,
-    hashed_password: await hashPassword(data.password),
+    hashed_password: await hashPassword(generateRandomPassword()),
     roles: data.roles,
     funcionalidades_adicionales: data.funcionalidades_adicionales ?? [],
     cargo: data.cargo ?? null,
     telefono: data.telefono ?? null,
     activo: true,
-    debe_cambiar_password: true, // fuerza cambio en el primer login -- ver CambiarPasswordPage
   });
   return getById(usuario.id);
 }
@@ -79,11 +79,6 @@ async function update(id, data) {
   if (data.funcionalidades_adicionales !== undefined) values.funcionalidades_adicionales = data.funcionalidades_adicionales;
   if (data.cargo !== undefined) values.cargo = data.cargo;
   if (data.telefono !== undefined) values.telefono = data.telefono;
-  if (data.password) {
-    validatePassword(data.password);
-    values.hashed_password = await hashPassword(data.password);
-    values.debe_cambiar_password = true; // reset de contraseña por admin -- fuerza cambio otra vez
-  }
   if (data.activo !== undefined) values.activo = data.activo;
 
   if (Object.keys(values).length > 0) await usuario.update(values);
@@ -151,18 +146,8 @@ async function registrarConexion(usuario) {
   }
 }
 
-// Genera y GUARDA una contrasena temporal nueva (se devuelve una sola vez) y obliga a cambiarla al
-// entrar. Para las cuentas que se crean con una clave que el admin no quiere inventar a mano.
-async function regenerarPassword(id) {
-  const usuario = await Usuario.findByPk(id);
-  if (!usuario) throw new ApiError(404, 'Usuario no encontrado');
-  const password = generateRandomPassword();
-  await usuario.update({ hashed_password: await hashPassword(password), debe_cambiar_password: true });
-  return { password };
-}
-
 // Acciones masivas sobre varias cuentas desde la lista de Usuarios. La cuenta de quien ejecuta la
-// accion nunca se toca. Para 'generar-password' devuelve ademas las contrasenas temporales, UNA sola vez.
+// accion nunca se toca.
 async function accionMasiva({ ids, accion }, actorId) {
   const unicos = [...new Set(ids)];
   const usuarios = await Usuario.findAll({ where: { id: unicos } });
@@ -176,23 +161,12 @@ async function accionMasiva({ ids, accion }, actorId) {
     else objetivo.push(usuario);
   }
 
-  if (accion === 'generar-password') {
-    const resultados = [];
-    for (const usuario of objetivo) {
-      const password = generateRandomPassword();
-      await usuario.update({ hashed_password: await hashPassword(password), debe_cambiar_password: true });
-      resultados.push({ id: usuario.id, nombre: usuario.nombre, email: usuario.email, password });
-    }
-    return { procesados: resultados.length, omitidos, resultados };
-  }
-
   const activo = accion === 'activar';
   for (const usuario of objetivo) await usuario.update({ activo });
   return { procesados: objetivo.length, omitidos };
 }
 
 module.exports = {
-  regenerarPassword,
   accionMasiva,
   getMe,
   list,
