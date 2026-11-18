@@ -44,7 +44,7 @@ export function LoginPage() {
 
   return (
     <div className={styles.splitWrap}>
-      {/* backgroundImage inline (no en el CSS module) -- una url('/login-hero.jpg')
+      {/* backgroundImage inline (no en el CSS module) -- una url('/login-hero.svg')
           absoluta en CSS no se reescribe con el `base` de Vite cuando la app
           vive bajo un subpath; import.meta.env.BASE_URL si refleja ese `base`.
           Las DOS capas (velo + foto) van juntas en el mismo inline style: un
@@ -52,7 +52,7 @@ export function LoginPage() {
       <div
         className={styles.brandPanel}
         style={{
-          backgroundImage: `linear-gradient(160deg, rgba(11, 45, 77, 0.94) 0%, rgba(20, 48, 143, 0.82) 55%, rgba(35, 43, 237, 0.7) 100%), url('${import.meta.env.BASE_URL}login-hero.jpg')`,
+          backgroundImage: `linear-gradient(160deg, rgba(11, 45, 77, 0.82) 0%, rgba(20, 48, 143, 0.55) 55%, rgba(35, 43, 237, 0.38) 100%), url('${import.meta.env.BASE_URL}login-hero.svg')`,
         }}
         aria-hidden="true"
       >
@@ -76,7 +76,7 @@ export function LoginPage() {
           <img className={styles.formLogo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="aed" />
           <div className={styles.formHead}>
             <h1 className={styles.formTitle}>Te damos la bienvenida</h1>
-            <p className={styles.formSubtitle}>Ingresa con tu cuenta de Outlook para continuar.</p>
+            <p className={styles.formSubtitle}>Ingresa con tu cuenta de Microsoft para continuar.</p>
           </div>
 
           {error && (
@@ -85,9 +85,9 @@ export function LoginPage() {
             </p>
           )}
 
-          <button type="button" className={styles.submit} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }} onClick={() => window.location.assign(`${API_BASE_URL}/auth/azure/login`)}>
+          <button type="button" className={styles.sso} onClick={() => window.location.assign(`${API_BASE_URL}/auth/azure/login`)}>
             <IconoMicrosoft />
-            Continuar con Outlook (Microsoft)
+            Continuar con Microsoft
           </button>
 
           <p className={styles.footnote}>¿Problemas para ingresar? Escribe al administrador del sistema.</p>
