@@ -180,7 +180,7 @@ const ORDEN_ETAPAS = [
 const DIA_MS = 24 * 60 * 60 * 1000;
 const LIMITE_ATENCION = 8;
 const LIMITE_POR_CORREGIR = 5;
-const MESES_GRAFICO = 6;
+const MESES_GRAFICO = 12;
 
 function mesClave(fecha) {
   return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;

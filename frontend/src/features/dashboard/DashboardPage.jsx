@@ -340,7 +340,7 @@ export function DashboardPage() {
                   />
                 )}
                 {!sinCompletadas && (
-                  <CompletadasMesChart title="Completadas por mes" hint="Últimos 6 meses" description="Solicitudes que terminaron su flujo, por mes." data={datosMeses} />
+                  <CompletadasMesChart title="Completadas por mes" hint={`Últimos ${datosMeses.length} meses`} description="Solicitudes que terminaron su flujo, por mes." data={datosMeses} />
                 )}
               </div>
             ) : (
