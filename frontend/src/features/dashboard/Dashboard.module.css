@@ -493,22 +493,25 @@
 
 .alDia {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: var(--space-xl) var(--space-md);
-  text-align: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
 }
 
 .alDiaIcono {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 8px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--color-success-surface);
   color: var(--color-success-ink);
+}
+
+.alDiaCuerpo {
+  flex: 1;
+  min-width: 0;
 }
 
 .alDiaTitulo {
@@ -518,9 +521,24 @@
 }
 
 .alDiaTexto {
-  margin: 0;
+  margin: 2px 0 0;
   color: var(--color-ink-muted);
   font-size: var(--text-data-size);
+}
+
+.alDiaAccion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.alDiaAccion:hover {
+  text-decoration: underline;
 }
 
 /* ---------- Tabla de recientes (Data Table del HRMS) ---------- */
@@ -676,4 +694,214 @@
   .esqueletoPanel {
     animation: none;
   }
+}
+
+/* ---------- Encabezado oscuro con las cifras (rediseno 2026-11-18) ---------- */
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  background: var(--color-brand-deep);
+  color: var(--color-primary-ink-on);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Firma de marca: el degradado AED como una linea fina al pie del encabezado. */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: var(--gradient-aed);
+}
+
+.heroTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.heroTexto {
+  min-width: 0;
+}
+
+.hero .title {
+  color: var(--color-primary-ink-on);
+}
+
+.heroFrase {
+  margin: 6px 0 0;
+  font-size: var(--text-headline-size);
+  font-weight: 500;
+  line-height: var(--text-headline-line);
+  color: #fff;
+  text-wrap: balance;
+}
+
+.heroFecha {
+  margin: 6px 0 0;
+  font-size: var(--text-data-size);
+  color: color-mix(in srgb, #fff 72%, var(--color-brand-deep));
+}
+
+.heroFecha::first-letter {
+  text-transform: uppercase;
+}
+
+.heroToggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, #fff 22%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, #fff 8%, transparent);
+}
+
+.heroToggleBtn {
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: color-mix(in srgb, #fff 85%, var(--color-brand-deep));
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.heroToggleBtn:hover {
+  background: color-mix(in srgb, #fff 14%, transparent);
+  color: #fff;
+}
+
+.heroToggleBtnActivo,
+.heroToggleBtnActivo:hover {
+  background: #fff;
+  color: var(--color-brand-deep);
+}
+
+.heroCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  background: var(--color-accent-vibrant);
+  color: var(--color-brand-deep);
+  font: inherit;
+  font-size: var(--text-data-size);
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter var(--duration-fast) var(--ease-standard);
+}
+
+.heroCta:hover {
+  filter: brightness(0.94);
+}
+
+.heroToggleBtn:focus-visible,
+.heroCta:focus-visible,
+.cifra:focus-visible {
+  outline: 2px solid var(--color-accent-vibrant);
+  outline-offset: 2px;
+}
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+  margin: 0;
+  padding-top: var(--space-md);
+  border-top: 1px solid color-mix(in srgb, #fff 16%, transparent);
+}
+
+.cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 var(--space-md);
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.cifra:first-child {
+  padding-left: 0;
+}
+
+.cifra + .cifra {
+  border-left: 1px solid color-mix(in srgb, #fff 14%, transparent);
+}
+
+a.cifra:hover .cifraLabel {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.cifraValor {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.cifraCero {
+  color: color-mix(in srgb, #fff 45%, var(--color-brand-deep));
+}
+
+.cifraAlerta {
+  color: #ffd27a;
+}
+
+.cifraLabel {
+  font-size: var(--text-data-size);
+  font-weight: 500;
+  color: color-mix(in srgb, #fff 85%, var(--color-brand-deep));
+}
+
+.cifraSub {
+  font-size: var(--text-label-size);
+  color: color-mix(in srgb, #fff 68%, var(--color-brand-deep));
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+  }
+
+  .cifras {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-md);
+  }
+
+  .cifra {
+    padding: 0;
+    border-left: none !important;
+  }
+}
+
+/* ---------- Panorama (graficos solo si hay datos) ---------- */
+.panorama {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.panoramaVacio {
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
 }

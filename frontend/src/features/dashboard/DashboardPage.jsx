@@ -5,14 +5,12 @@
 // `GET /dashboard/resumen`, filtrable por categoria (Todas / Directas / Indirectas).
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowRight, CheckCircle2, ChevronRight, Clock, FileText, Plus, RotateCcw, Wallet } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronRight, Clock, FileText, Plus, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { usuarioTienePermiso } from '../../utils/permisos.js';
 import { getDashboardResumen } from '../../api/dashboard.js';
 import { ACCION_NOMBRES_CORTOS, ESTADO_LABELS, TIPO_SOLICITUD_LABELS } from '../../utils/solicitudes.js';
 import { SolicitudBadge } from '../solicitudes/SolicitudBadge.jsx';
-import { Button } from '../../components/ui/Button.jsx';
-import { StatTile } from './StatTile.jsx';
 import { CategoryBarChart } from './charts/CategoryBarChart.jsx';
 import { OrdinalBarChart } from './charts/OrdinalBarChart.jsx';
 import { DonutChart } from './charts/DonutChart.jsx';
@@ -170,179 +168,192 @@ export function DashboardPage() {
   const datosTipos = useMemo(() => (datos?.porTipo ?? []).map((t) => ({ tipoLabel: TIPO_SOLICITUD_LABELS[t.tipo] ?? t.tipo, total: t.total })), [datos]);
   const sinCompletadas = datosMeses.every((m) => m.total === 0);
 
+  const nAtencion = datos?.atencion.total ?? 0;
+  const nCorregir = datos?.porCorregir.total ?? 0;
+  const frase =
+    nAtencion > 0
+      ? `Tienes ${nAtencion} ${nAtencion === 1 ? 'solicitud esperando' : 'solicitudes esperando'} tu acción${nCorregir > 0 ? ` y ${nCorregir} por corregir` : ''}.`
+      : nCorregir > 0
+        ? `Tienes ${nCorregir} ${nCorregir === 1 ? 'solicitud' : 'solicitudes'} por corregir.`
+        : 'Estás al día: nada espera tu acción.';
+  const hayGraficos = datosEtapas.some((e) => e.total > 0) || datosTipos.some((t) => t.total > 0) || !sinCompletadas;
+
+  // Cifras del encabezado: un cero se apaga para que lo que tiene valor se lea primero.
+  const cifras = kpis
+    ? [
+        { clave: 'activas', label: 'En el flujo', valor: kpis.activas, sub: categoria ? null : `${kpis.activasPorCategoria.DIRECTA} directas · ${kpis.activasPorCategoria.INDIRECTA} indirectas`, ayuda: 'Solicitudes que ya salieron de borrador y todavía no se completan ni se anulan; incluye las que están en revisión.' },
+        { clave: 'mia', label: 'Pendientes de mi aprobación', valor: kpis.pendientesMiAprobacion, sub: kpis.pendientesMiAprobacion > 0 && masAntigua != null ? `La más antigua lleva ${masAntigua} ${masAntigua === 1 ? 'día' : 'días'}` : null, alerta: kpis.pendientesMiAprobacion > 0 && masAntigua >= 5, ayuda: 'Solicitudes en las que tienes un botón de aprobar o gestionar ahora mismo.' },
+        { clave: 'corregir', label: 'Por corregir', valor: kpis.requierenCorreccion, sub: 'Devueltas o en revisión', ayuda: 'Solicitudes devueltas al solicitante o marcadas En revisión por Contratos.' },
+        { clave: 'mes', label: 'Completadas este mes', valor: kpis.completadasMes, sub: deltaMes === 0 ? 'Igual que el mes anterior' : `${deltaMes > 0 ? '+' : '−'}${Math.abs(deltaMes)} vs. mes anterior` },
+        { clave: 'valor', label: 'Valor en trámite', valor: formatoMillones(kpis.valorEnTramite), sinLink: true, ayuda: 'Suma del valor final de las solicitudes que están en el flujo de aprobación.' },
+      ]
+    : [];
+
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Hola, {primerNombre || 'bienvenido'}</h1>
-          <p className={styles.subtitle}>{hoy} · Contratación directa e indirecta</p>
+      <header className={styles.hero}>
+        <div className={styles.heroTop}>
+          <div className={styles.heroTexto}>
+            <h1 className={styles.title}>Hola, {primerNombre || 'bienvenido'}</h1>
+            <p className={styles.heroFrase}>{datos ? frase : 'Cargando tu bandeja…'}</p>
+            <p className={styles.heroFecha}>{hoy}</p>
+          </div>
+          <div className={styles.headerAcciones}>
+            {mostrarFiltro && (
+              <div className={styles.heroToggle} role="tablist" aria-label="Categoría de solicitudes">
+                {FILTROS.map((f) => (
+                  <button
+                    key={f.label}
+                    type="button"
+                    role="tab"
+                    aria-selected={categoria === f.clave}
+                    className={`${styles.heroToggleBtn} ${categoria === f.clave ? styles.heroToggleBtnActivo : ''}`}
+                    onClick={() => setCategoria(f.clave)}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {linkNueva && (
+              <button type="button" className={styles.heroCta} onClick={() => navigate(linkNueva)}>
+                <Plus size={16} strokeWidth={2.25} aria-hidden="true" />
+                Nueva solicitud
+              </button>
+            )}
+          </div>
         </div>
-        <div className={styles.headerAcciones}>
-          {mostrarFiltro && (
-            <div className={styles.toggleGroup} role="tablist" aria-label="Categoría de solicitudes">
-              {FILTROS.map((f) => (
-                <button
-                  key={f.label}
-                  type="button"
-                  role="tab"
-                  aria-selected={categoria === f.clave}
-                  className={`${styles.toggleButton} ${categoria === f.clave ? styles.toggleButtonActive : ''}`}
-                  onClick={() => setCategoria(f.clave)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          )}
-          {linkNueva && (
-            <Button type="button" onClick={() => navigate(linkNueva)}>
-              <Plus size={16} strokeWidth={2} aria-hidden="true" style={{ marginRight: 6, verticalAlign: '-3px' }} />
-              Nueva solicitud
-            </Button>
-          )}
-        </div>
-      </div>
+
+        {datos && (
+          <div className={styles.cifras}>
+            {cifras.map((c) => {
+              const cuerpo = (
+                <>
+                  <span className={`${styles.cifraValor} ${c.valor === 0 ? styles.cifraCero : ''} ${c.alerta ? styles.cifraAlerta : ''}`}>{c.valor}</span>
+                  <span className={styles.cifraLabel}>{c.label}</span>
+                  {c.sub && <span className={styles.cifraSub}>{c.sub}</span>}
+                </>
+              );
+              return linkVerTodas && !c.sinLink ? (
+                <Link key={c.clave} to={linkVerTodas} className={styles.cifra} title={c.ayuda}>
+                  {cuerpo}
+                </Link>
+              ) : (
+                <div key={c.clave} className={styles.cifra} title={c.ayuda}>
+                  {cuerpo}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </header>
 
       {error && <div className={styles.formError}>{error}</div>}
 
       {!datos && !error && (
         <div className={styles.esqueleto} aria-busy="true" aria-label="Cargando inicio">
-          <div className={styles.esqueletoFila}>
-            {[0, 1, 2, 3, 4].map((i) => (
-              <span key={i} className={styles.esqueletoKpi} />
-            ))}
-          </div>
           <span className={styles.esqueletoPanel} />
         </div>
       )}
 
       {datos && (
         <div className={`${styles.page} ${cargando ? styles.cargando : ''}`}>
-          <div className={styles.statsGrid}>
-            <StatTile
-              label="Solicitudes en el flujo"
-              value={kpis.activas}
-              icon={FileText}
-              tone="primary"
-              to={linkVerTodas}
-              sub={categoria ? undefined : `${kpis.activasPorCategoria.DIRECTA} directas · ${kpis.activasPorCategoria.INDIRECTA} indirectas`}
-              description="Solicitudes que ya salieron de borrador y todavía no se completan ni se anulan; incluye las que están en revisión."
-            />
-            <StatTile
-              label="Pendientes de mi aprobación"
-              value={kpis.pendientesMiAprobacion}
-              icon={Clock}
-              tone="warning"
-              warning={kpis.pendientesMiAprobacion > 0}
-              to={linkVerTodas}
-              sub={kpis.pendientesMiAprobacion > 0 && masAntigua != null ? `La más antigua lleva ${masAntigua} ${masAntigua === 1 ? 'día' : 'días'}` : 'Nada esperando tu acción'}
-              subTone={kpis.pendientesMiAprobacion > 0 && masAntigua >= 5 ? 'alert' : undefined}
-              description="Solicitudes en las que tienes un botón de aprobar o gestionar ahora mismo."
-            />
-            <StatTile
-              label="Por corregir"
-              value={kpis.requierenCorreccion}
-              icon={AlertCircle}
-              tone="danger"
-              to={linkVerTodas}
-              sub="Devueltas o en revisión"
-              description="Solicitudes devueltas al solicitante o marcadas En revisión por Contratos."
-            />
-            <StatTile
-              label="Completadas este mes"
-              value={kpis.completadasMes}
-              icon={CheckCircle2}
-              tone="success"
-              to={linkVerTodas}
-              sub={deltaMes === 0 ? 'Igual que el mes anterior' : `${deltaMes > 0 ? '+' : '−'}${Math.abs(deltaMes)} vs. mes anterior`}
-              subTone={deltaMes > 0 ? 'up' : deltaMes < 0 ? 'down' : undefined}
-            />
-            <StatTile
-              label="Valor en trámite"
-              value={formatoMillones(kpis.valorEnTramite)}
-              icon={Wallet}
-              tone="neutral"
-              sub="Suma de las solicitudes en el flujo"
-              description="Suma del valor final de las solicitudes que están en el flujo de aprobación."
-            />
-          </div>
+          <section className={styles.panel}>
+            <header className={styles.panelHeader}>
+              <div className={styles.panelTituloFila}>
+                <h2 className={styles.panelTitulo}>Requiere tu atención</h2>
+                {nAtencion + nCorregir > 0 && <span className={styles.contador}>{nAtencion + nCorregir}</span>}
+              </div>
+              {linkVerTodas && (
+                <Link to={linkVerTodas} className={styles.verTodas}>
+                  Ver todas
+                  <ArrowRight size={14} strokeWidth={1.75} aria-hidden="true" />
+                </Link>
+              )}
+            </header>
 
-          <div className={styles.fila}>
-            <section className={styles.panel}>
-              <header className={styles.panelHeader}>
-                <div className={styles.panelTituloFila}>
-                  <h2 className={styles.panelTitulo}>Requiere tu atención</h2>
-                  {datos.atencion.total + datos.porCorregir.total > 0 && <span className={styles.contador}>{datos.atencion.total + datos.porCorregir.total}</span>}
-                </div>
-                {linkVerTodas && (
-                  <Link to={linkVerTodas} className={styles.verTodas}>
-                    Ver todas
-                    <ArrowRight size={14} strokeWidth={1.75} aria-hidden="true" />
-                  </Link>
-                )}
-              </header>
-
-              {datos.atencion.total === 0 && datos.porCorregir.total === 0 ? (
-                <div className={styles.alDia}>
-                  <span className={styles.alDiaIcono}>
-                    <CheckCircle2 size={22} aria-hidden="true" />
-                  </span>
+            {nAtencion === 0 && nCorregir === 0 ? (
+              <div className={styles.alDia}>
+                <span className={styles.alDiaIcono}>
+                  <CheckCircle2 size={20} aria-hidden="true" />
+                </span>
+                <div className={styles.alDiaCuerpo}>
                   <p className={styles.alDiaTitulo}>Estás al día</p>
                   <p className={styles.alDiaTexto}>No tienes solicitudes esperando tu acción ni solicitudes tuyas por corregir.</p>
                 </div>
-              ) : (
-                <>
-                  {datos.atencion.items.length > 0 && (
-                    <>
-                      <h3 className={styles.grupoTitulo}>
-                        Esperan tu acción{datos.atencion.total > datos.atencion.items.length ? ` · mostrando ${datos.atencion.items.length} de ${datos.atencion.total}` : ''}
-                      </h3>
-                      <ul className={styles.lista}>
-                        {datos.atencion.items.map((item) => (
-                          <ItemAtencion key={item.id} item={item} />
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  {datos.porCorregir.items.length > 0 && (
-                    <>
-                      <h3 className={styles.grupoTitulo}>Tus solicitudes por corregir</h3>
-                      <ul className={styles.lista}>
-                        {datos.porCorregir.items.map((item) => (
-                          <ItemAtencion key={item.id} item={item} porCorregir />
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </>
-              )}
-            </section>
+                {linkNueva && (
+                  <Link to={linkNueva} className={styles.alDiaAccion}>
+                    Nueva solicitud
+                    <ArrowRight size={14} strokeWidth={1.75} aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <>
+                {datos.atencion.items.length > 0 && (
+                  <>
+                    <h3 className={styles.grupoTitulo}>
+                      Esperan tu acción{datos.atencion.total > datos.atencion.items.length ? ` · mostrando ${datos.atencion.items.length} de ${datos.atencion.total}` : ''}
+                    </h3>
+                    <ul className={styles.lista}>
+                      {datos.atencion.items.map((item) => (
+                        <ItemAtencion key={item.id} item={item} />
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {datos.porCorregir.items.length > 0 && (
+                  <>
+                    <h3 className={styles.grupoTitulo}>Tus solicitudes por corregir</h3>
+                    <ul className={styles.lista}>
+                      {datos.porCorregir.items.map((item) => (
+                        <ItemAtencion key={item.id} item={item} porCorregir />
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
+            )}
+          </section>
 
-            <div className={styles.columnaGraficos}>
-              <CategoryBarChart
-                title="Solicitudes por etapa"
-                hint="Dónde está cada solicitud del flujo"
-                description="Cuántas solicitudes hay en cada paso del flujo de aprobación; las devueltas y en revisión van al final."
-                data={datosEtapas}
-                labelKey="etapa"
-              />
-              <DonutChart
-                title="En el flujo, por tipo"
-                hint="Qué tipo de solicitudes hay en curso"
-                description="Distribución por tipo de las solicitudes que están en el flujo de aprobación."
-                data={datosTipos}
-                labelKey="tipoLabel"
-              />
-            </div>
-          </div>
-
-          <OrdinalBarChart
-            title="Completadas por mes"
-            hint="Últimos 6 meses"
-            description="Solicitudes que terminaron su flujo, por mes."
-            data={sinCompletadas ? [] : datosMeses}
-            ramp={[DATA_INK]}
-          />
+          <section className={styles.panorama} aria-labelledby="panorama-titulo">
+            <h2 id="panorama-titulo" className={styles.panelTitulo}>
+              Panorama del flujo
+            </h2>
+            {hayGraficos ? (
+              <div className={styles.chartsGrid}>
+                {datosEtapas.some((e) => e.total > 0) && (
+                  <CategoryBarChart
+                    title="Solicitudes por etapa"
+                    hint="Dónde está cada solicitud del flujo"
+                    description="Cuántas solicitudes hay en cada paso del flujo de aprobación; las devueltas y en revisión van al final."
+                    data={datosEtapas}
+                    labelKey="etapa"
+                  />
+                )}
+                {datosTipos.some((t) => t.total > 0) && (
+                  <DonutChart
+                    title="En el flujo, por tipo"
+                    hint="Qué tipo de solicitudes hay en curso"
+                    description="Distribución por tipo de las solicitudes que están en el flujo de aprobación."
+                    data={datosTipos}
+                    labelKey="tipoLabel"
+                  />
+                )}
+                {!sinCompletadas && (
+                  <OrdinalBarChart
+                    title="Completadas por mes"
+                    hint="Últimos 6 meses"
+                    description="Solicitudes que terminaron su flujo, por mes."
+                    data={datosMeses}
+                    ramp={[DATA_INK]}
+                  />
+                )}
+              </div>
+            ) : (
+              <p className={styles.panoramaVacio}>Cuando haya solicitudes en el flujo, aquí verás en qué etapa está cada una, de qué tipo son y cuántas se completan cada mes.</p>
+            )}
+          </section>
 
           <section className={styles.panel}>
             <header className={styles.panelHeader}>
