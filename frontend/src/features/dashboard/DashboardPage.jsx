@@ -315,39 +315,6 @@ export function DashboardPage() {
             )}
           </section>
 
-          <section className={styles.panorama} aria-labelledby="panorama-titulo">
-            <h2 id="panorama-titulo" className={styles.panelTitulo}>
-              Panorama del flujo
-            </h2>
-            {hayGraficos ? (
-              <div className={styles.chartsGrid}>
-                {datosEtapas.some((e) => e.total > 0) && (
-                  <CategoryBarChart
-                    title="Solicitudes por etapa"
-                    hint="Dónde está cada solicitud del flujo"
-                    description="Cuántas solicitudes hay en cada paso del flujo de aprobación; las devueltas y en revisión van al final."
-                    data={datosEtapas}
-                    labelKey="etapa"
-                  />
-                )}
-                {datosTipos.some((t) => t.total > 0) && (
-                  <DonutChart
-                    title="En el flujo, por tipo"
-                    hint="Qué tipo de solicitudes hay en curso"
-                    description="Distribución por tipo de las solicitudes que están en el flujo de aprobación."
-                    data={datosTipos}
-                    labelKey="tipoLabel"
-                  />
-                )}
-                {!sinCompletadas && (
-                  <CompletadasMesChart title="Completadas por mes" hint={`Últimos ${datosMeses.length} meses`} description="Solicitudes que terminaron su flujo, por mes." data={datosMeses} />
-                )}
-              </div>
-            ) : (
-              <p className={styles.panoramaVacio}>Cuando haya solicitudes en el flujo, aquí verás en qué etapa está cada una, de qué tipo son y cuántas se completan cada mes.</p>
-            )}
-          </section>
-
           <section className={styles.panel}>
             <header className={styles.panelHeader}>
               <h2 className={styles.panelTitulo}>Solicitudes recientes</h2>
@@ -411,6 +378,39 @@ export function DashboardPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </section>
+
+          <section className={styles.panorama} aria-labelledby="panorama-titulo">
+            <h2 id="panorama-titulo" className={styles.panelTitulo}>
+              Panorama del flujo
+            </h2>
+            {hayGraficos ? (
+              <div className={styles.chartsGrid}>
+                {datosEtapas.some((e) => e.total > 0) && (
+                  <CategoryBarChart
+                    title="Solicitudes por etapa"
+                    hint="Dónde está cada solicitud del flujo"
+                    description="Cuántas solicitudes hay en cada paso del flujo de aprobación; las devueltas y en revisión van al final."
+                    data={datosEtapas}
+                    labelKey="etapa"
+                  />
+                )}
+                {datosTipos.some((t) => t.total > 0) && (
+                  <DonutChart
+                    title="En el flujo, por tipo"
+                    hint="Qué tipo de solicitudes hay en curso"
+                    description="Distribución por tipo de las solicitudes que están en el flujo de aprobación."
+                    data={datosTipos}
+                    labelKey="tipoLabel"
+                  />
+                )}
+                {!sinCompletadas && (
+                  <CompletadasMesChart title="Completadas por mes" hint={`Últimos ${datosMeses.length} meses`} description="Solicitudes que terminaron su flujo, por mes." data={datosMeses} />
+                )}
+              </div>
+            ) : (
+              <p className={styles.panoramaVacio}>Cuando haya solicitudes en el flujo, aquí verás en qué etapa está cada una, de qué tipo son y cuántas se completan cada mes.</p>
             )}
           </section>
         </div>
