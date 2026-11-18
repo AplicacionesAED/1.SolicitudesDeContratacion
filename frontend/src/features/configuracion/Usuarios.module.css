@@ -399,6 +399,17 @@
   line-height: 1.25;
 }
 
+/* Columna Roles de la tabla de usuarios: todas las etiquetas en una sola linea, sin partir ningun rol. */
+.rolesUnaLinea {
+  flex-wrap: nowrap;
+}
+
+.rolesUnaLinea > * {
+  max-width: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .dateCell {
   font-variant-numeric: tabular-nums;
   /* Se deja partir en dos lineas (fecha / hora): con 1440px de pantalla la tabla

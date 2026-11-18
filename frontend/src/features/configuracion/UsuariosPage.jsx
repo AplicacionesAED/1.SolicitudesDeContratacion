@@ -296,7 +296,7 @@ export function UsuariosPage() {
                     </div>
                   </td>
                   <td>
-                    <div className={styles.rolesCell}>
+                    <div className={`${styles.rolesCell} ${styles.rolesUnaLinea}`}>
                       {(u.roles ?? []).map((rol) => (
                         <Badge key={rol} variant="info">
                           {etiquetaRol(rol)}
