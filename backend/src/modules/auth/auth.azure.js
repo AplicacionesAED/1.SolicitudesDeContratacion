@@ -4,7 +4,7 @@
 // autorización estándar (authorization code + PKCE no requerido para un
 // confidential client). Mismo comportamiento que el `signIn`/`jwt` callback
 // original: sin usuario con ese correo -> OAuthAccountNotFound (el primer ingreso
-// vincula la cuenta por correo, como SIGER), usuario inactivo -> OAuthAccountInactive, éxito -> mismas cookies de sesión
+// vincula la cuenta por correo, como SISGER), usuario inactivo -> OAuthAccountInactive, éxito -> mismas cookies de sesión
 // que el login por contraseña.
 const msal = require('@azure/msal-node');
 const { Op } = require('sequelize');
@@ -82,7 +82,7 @@ const callback = asyncHandler(async (req, res) => {
     }
   }
 
-  // Login normal. Primer ingreso (igual que SIGER): si el microsoftId todavía no está vinculado, se vincula solo por
+  // Login normal. Primer ingreso (igual que SISGER): si el microsoftId todavía no está vinculado, se vincula solo por
   // el correo con el que el admin creó el usuario (email o microsoft_email). Sin usuario con ese correo -> NotFound.
   let usuario = await usuarioService.buscarPorMicrosoftId(microsoftId);
   if (!usuario && microsoftEmail) {

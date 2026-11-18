@@ -77,7 +77,7 @@ migración; **no** va en producción.
   con `permiso` aparece en ambos solo.
 - Se puede eliminar un rol solo si no es `es_admin`, sin cuentas y sin uso en `AprobadorFrente`/desvíos (409 si no). Usuarios:
   solo se inactivan; borrado definitivo (`DELETE /usuarios/:id/definitivo`) solo de inactivos sin FK (409 si no).
-- Login: **solo** SSO Azure AD / Outlook (`@azure/msal-node`, `auth.azure.js`); desde 2026-11-18 no existe login por contraseña ni `MASTER_KEY_HASH`. El primer ingreso con Microsoft vincula la cuenta solo, por el correo con el que el admin creó el usuario (igual que SIGER); el
+- Login: **solo** SSO Azure AD / Outlook (`@azure/msal-node`, `auth.azure.js`); desde 2026-11-18 no existe login por contraseña ni `MASTER_KEY_HASH`. El primer ingreso con Microsoft vincula la cuenta solo, por el correo con el que el admin creó el usuario (igual que SISGER); el
   `AZURE_REDIRECT_URI` (`.../api/auth/azure/callback`) debe estar registrado en el App Registration de Azure.
 
 ### Solicitudes (módulo núcleo, `modules/solicitud/`)
