@@ -8,9 +8,11 @@ const ApiError = require('../../utils/ApiError');
 const { ok } = require('../../utils/ApiResponse');
 const Tercero = require('./tercero.model');
 
-const TENANT_ID = process.env.AZURE_TENANT_ID;
-const CLIENT_ID = process.env.AZURE_CLIENT_ID;
-const CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET;
+// Credenciales propias del sync (app "CarteraExcel", permiso de aplicación sobre Graph), separadas de las del
+// login (app "Acceso Apps"). Si SHAREPOINT_* no están definidas, cae a AZURE_* (comportamiento anterior).
+const TENANT_ID = process.env.SHAREPOINT_TENANT_ID || process.env.AZURE_TENANT_ID;
+const CLIENT_ID = process.env.SHAREPOINT_CLIENT_ID || process.env.AZURE_CLIENT_ID;
+const CLIENT_SECRET = process.env.SHAREPOINT_CLIENT_SECRET || process.env.AZURE_CLIENT_SECRET;
 const FILE_ID = process.env.SHAREPOINT_FILE_ID;
 
 async function getAccessToken() {
