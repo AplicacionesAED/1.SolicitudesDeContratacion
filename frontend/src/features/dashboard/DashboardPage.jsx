@@ -12,9 +12,8 @@ import { getDashboardResumen } from '../../api/dashboard.js';
 import { ACCION_NOMBRES_CORTOS, ESTADO_LABELS, TIPO_SOLICITUD_LABELS } from '../../utils/solicitudes.js';
 import { SolicitudBadge } from '../solicitudes/SolicitudBadge.jsx';
 import { CategoryBarChart } from './charts/CategoryBarChart.jsx';
-import { OrdinalBarChart } from './charts/OrdinalBarChart.jsx';
+import { CompletadasMesChart } from './charts/CompletadasMesChart.jsx';
 import { DonutChart } from './charts/DonutChart.jsx';
-import { DATA_INK } from './charts/palette.js';
 import styles from './Dashboard.module.css';
 
 const FILTROS = [
@@ -341,13 +340,7 @@ export function DashboardPage() {
                   />
                 )}
                 {!sinCompletadas && (
-                  <OrdinalBarChart
-                    title="Completadas por mes"
-                    hint="Últimos 6 meses"
-                    description="Solicitudes que terminaron su flujo, por mes."
-                    data={datosMeses}
-                    ramp={[DATA_INK]}
-                  />
+                  <CompletadasMesChart title="Completadas por mes" hint="Últimos 6 meses" description="Solicitudes que terminaron su flujo, por mes." data={datosMeses} />
                 )}
               </div>
             ) : (

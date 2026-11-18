@@ -905,3 +905,65 @@ a.cifra:hover .cifraLabel {
   font-size: var(--text-data-size);
   color: var(--color-ink-muted);
 }
+
+/* ---------- Completadas por mes (columnas delgadas) ---------- */
+.mesColumnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-auto-flow: column;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mesColumna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mesValor {
+  font-size: var(--text-data-size);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+
+.mesValorCero {
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+
+.mesPista {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 96px;
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.mesBarra {
+  width: min(28px, 70%);
+  border-radius: 6px 6px 0 0;
+  background: color-mix(in srgb, var(--color-primary) 30%, white);
+  transition: height var(--duration-fast) var(--ease-standard);
+}
+
+.mesBarraActual {
+  background: var(--color-primary);
+}
+
+.mesLabel {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.mesLabelActual {
+  font-weight: 700;
+  color: var(--color-ink);
+}
