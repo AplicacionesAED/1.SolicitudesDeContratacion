@@ -5,11 +5,11 @@ const validate = require('../../middlewares/validate');
 const { requireAuth } = require('../../middlewares/auth');
 const controller = require('./auth.controller');
 const azure = require('./auth.azure');
-const { loginSchema, cambiarPasswordSchema } = require('./auth.schema');
+const { cambiarPasswordSchema } = require('./auth.schema');
 
 const router = express.Router();
 
-router.post('/login', validate(loginSchema, 'body'), controller.login);
+// Sin login por contraseña (2026-11-18): el único ingreso es Microsoft (Outlook), ver auth.azure.js.
 router.post('/logout', controller.logout);
 router.post('/refresh', controller.refresh);
 router.post('/cambiar-password', requireAuth, validate(cambiarPasswordSchema, 'body'), controller.cambiarPassword);

@@ -96,7 +96,7 @@ const callback = asyncHandler(async (req, res) => {
 
   await usuarioService.registrarConexion(usuario);
   setSessionCookies(res, usuario);
-  res.redirect(usuario.debe_cambiar_password ? `${FRONTEND_URL}/cambiar-password` : FRONTEND_URL);
+  res.redirect(FRONTEND_URL);
 });
 
 // POST /auth/azure/unlink -- requireAuth.

@@ -4,10 +4,6 @@
 import client from './client';
 import { API_BASE_URL } from './client';
 
-export function login(email, password) {
-  return client.post('/auth/login', { username: email, password });
-}
-
 export function logout() {
   return client.post('/auth/logout');
 }

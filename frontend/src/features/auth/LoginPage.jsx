@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ClipboardCheck, Eye, EyeOff, FilePlus2, Handshake, Lock, Mail } from 'lucide-react';
-import { useAuth } from '../../auth/AuthContext.jsx';
+import { useSearchParams } from 'react-router-dom';
+import { ClipboardCheck, FilePlus2, Handshake } from 'lucide-react';
 import { API_BASE_URL } from '../../api/client.js';
 import styles from './LoginPage.module.css';
 
@@ -19,7 +18,6 @@ const BENEFICIOS = [
 
 const MENSAJES_ERROR_SSO = {
   OAuthAccountNotFound: 'No existe una cuenta vinculada a este correo de Microsoft. Pide a un administrador que cree tu usuario primero.',
-  OAuthNotLinked: 'Tu cuenta existe, pero no está vinculada a Microsoft todavía. Inicia sesión con contraseña y vincúlala desde tu perfil.',
   OAuthAccountInactive: 'Tu cuenta está desactivada. Contacta al administrador del sistema.',
   OAuthError: 'No se pudo completar el inicio de sesión con Microsoft. Intenta de nuevo.',
 };
@@ -36,38 +34,13 @@ function IconoMicrosoft() {
 }
 
 export function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [verPassword, setVerPassword] = useState(false);
   const [error, setError] = useState(null);
-  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     const codigo = searchParams.get('error');
     if (codigo) setError(MENSAJES_ERROR_SSO[codigo] ?? 'No se pudo iniciar sesión.');
   }, [searchParams]);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError(null);
-    setEnviando(true);
-    try {
-      const perfil = await login(email, password);
-      if (perfil.debe_cambiar_password) {
-        navigate('/cambiar-password', { replace: true });
-      } else {
-        navigate(location.state?.from?.pathname ?? '/', { replace: true });
-      }
-    } catch (err) {
-      setError(err.message ?? 'Credenciales incorrectas');
-    } finally {
-      setEnviando(false);
-    }
-  }
 
   return (
     <div className={styles.splitWrap}>
@@ -99,53 +72,12 @@ export function LoginPage() {
       </div>
 
       <div className={styles.formPanel}>
-        <form className={styles.formCard} onSubmit={handleSubmit}>
+        <div className={styles.formCard}>
           <img className={styles.formLogo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="aed" />
           <div className={styles.formHead}>
             <h1 className={styles.formTitle}>Te damos la bienvenida</h1>
-            <p className={styles.formSubtitle}>Ingresa con tu correo y contraseña para continuar.</p>
+            <p className={styles.formSubtitle}>Ingresa con tu cuenta de Outlook para continuar.</p>
           </div>
-
-          <label className={styles.field}>
-            <span className={styles.label}>Correo</span>
-            <span className={styles.inputWrap}>
-              <Mail size={18} strokeWidth={1.75} className={styles.inputIcon} aria-hidden="true" />
-              <input
-                className={styles.input}
-                type="email"
-                autoComplete="username"
-                placeholder="nombre@empresa.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-              />
-            </span>
-          </label>
-
-          <label className={styles.field}>
-            <span className={styles.label}>Contraseña</span>
-            <span className={styles.inputWrap}>
-              <Lock size={18} strokeWidth={1.75} className={styles.inputIcon} aria-hidden="true" />
-              <input
-                className={styles.input}
-                type={verPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="Tu contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className={styles.toggle}
-                onClick={() => setVerPassword((v) => !v)}
-                aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              >
-                {verPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
-              </button>
-            </span>
-          </label>
 
           {error && (
             <p className={styles.alert} role="alert">
@@ -153,19 +85,13 @@ export function LoginPage() {
             </p>
           )}
 
-          <button type="submit" className={styles.submit} disabled={enviando}>
-            {enviando ? 'Ingresando…' : 'Ingresar'}
-          </button>
-
-          <p className={styles.divider}>o</p>
-
-          <button type="button" className={styles.sso} onClick={() => window.location.assign(`${API_BASE_URL}/auth/azure/login`)}>
+          <button type="button" className={styles.submit} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }} onClick={() => window.location.assign(`${API_BASE_URL}/auth/azure/login`)}>
             <IconoMicrosoft />
-            Continuar con Microsoft
+            Continuar con Outlook (Microsoft)
           </button>
 
           <p className={styles.footnote}>¿Problemas para ingresar? Escribe al administrador del sistema.</p>
-        </form>
+        </div>
       </div>
     </div>
   );

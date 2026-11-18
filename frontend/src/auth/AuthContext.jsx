@@ -78,19 +78,13 @@ export function AuthProvider({ children }) {
     return () => setSessionExpiredHandler(null);
   }, []);
 
-  async function login(email, password) {
-    const res = await authApi.login(email, password);
-    await cargarPerfil();
-    return res.data;
-  }
-
   async function logout() {
     await authApi.logout();
     setUsuario(null);
   }
 
   return (
-    <AuthContext.Provider value={{ usuario, cargando, errorConexion, login, logout, refrescarPerfil: cargarPerfil }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ usuario, cargando, errorConexion, logout, refrescarPerfil: cargarPerfil }}>{children}</AuthContext.Provider>
   );
 }
 
