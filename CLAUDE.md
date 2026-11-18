@@ -34,7 +34,7 @@ Desde la raíz: `npm run dev` (backend **3021** + frontend Vite **5193**), `npm 
 Desde `backend/`: `npm run db:migrate` (sequelize-cli, idempotente), `npm run db:seed` (solo dev: admin + roles base; **nunca
 en producción**), `npm run dev` (nodemon), `npm start` (migra y arranca; lo que corre el contenedor).
 `.env` desde `.env.example`: `PG*`, `CORS_ORIGIN`, `FRONTEND_URL`, `PORT`, `JWT_SECRET`, `AZURE_*`, `SHAREPOINT_FILE_ID`,
-`MASTER_KEY_HASH` (opcional, **sin escapar los `$`**: dotenv plano), `GOOGLE_DRIVE_*`. `LEGACY_DATABASE_URL` solo para scripts de
+`GOOGLE_DRIVE_*`. `LEGACY_DATABASE_URL` solo para scripts de
 migración; **no** va en producción.
 
 ## Arquitectura del backend (`backend/src`)

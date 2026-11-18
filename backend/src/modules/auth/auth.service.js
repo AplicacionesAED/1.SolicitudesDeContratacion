@@ -3,8 +3,7 @@
 // funcionalidades_adicionales en el perfil devuelto. Desde 2026-11-18 ya no hay login por contraseña (ni
 // MASTER_KEY_HASH): el ingreso es solo por Microsoft, ver auth.azure.js.
 const ApiError = require('../../utils/ApiError');
-const { validatePassword } = require('../../utils/passwordRules');
-const { hashPassword, createAccessToken, createRefreshToken, decodeToken } = require('../../utils/security');
+const { createAccessToken, createRefreshToken, decodeToken } = require('../../utils/security');
 const Usuario = require('../usuario/usuario.model');
 
 function _perfil(usuario) {
@@ -37,9 +36,4 @@ async function refresh(refreshToken) {
   return { accessToken: createAccessToken(usuario.email, usuario.roles) };
 }
 
-async function cambiarPassword(usuario, nuevaPassword) {
-  validatePassword(nuevaPassword);
-  await usuario.update({ hashed_password: await hashPassword(nuevaPassword), debe_cambiar_password: false });
-}
-
-module.exports = { refresh, cambiarPassword, _perfil };
+module.exports = { refresh, _perfil };

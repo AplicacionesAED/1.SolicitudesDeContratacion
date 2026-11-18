@@ -1,31 +1,21 @@
 // Mi perfil (rediseno 2026-10-09). Antes era una tarjeta con 4 datos; ahora responde a lo que la persona necesita saber
-// de su propia cuenta: quien es, A QUE tiene acceso, en que frentes esta asignada y como protege su cuenta (cambiar la
-// contrasena y vincular Microsoft). El resultado de vincular llega como ?ms_linked=... / ?ms_error=... (ver
+// de su propia cuenta: quien es, A QUE tiene acceso, en que frentes esta asignada y como protege su cuenta (vincular
+// Microsoft). El resultado de vincular llega como ?ms_linked=... / ?ms_error=... (ver
 // backend/src/modules/auth/auth.azure.js#callback).
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Check, Circle } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext.jsx';
-import { cambiarPassword, desvincularMicrosoft, iniciarVinculacionMicrosoft } from '../../api/auth.js';
+import { desvincularMicrosoft, iniciarVinculacionMicrosoft } from '../../api/auth.js';
 import { listFrentes } from '../../api/frentes.js';
 import { usuarioTienePermiso, ROL_LABELS } from '../../utils/permisos.js';
 import { NAV_GROUPS } from '../../utils/navModulos.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
-import { Field, TextInput } from '../../components/ui/Field.jsx';
 import layoutStyles from '../../components/layout/WizardLayout.module.css';
 import { iniciales } from '../configuracion/usuarioUtils.js';
 import styles from '../configuracion/Usuarios.module.css';
 import extra from '../terceros/Terceros.module.css';
 import p from './PerfilPage.module.css';
-
-// Mismas reglas que backend/src/utils/passwordRules.js (el backend sigue siendo quien valida de verdad).
-const REQUISITOS = [
-  { texto: 'Al menos 8 caracteres', cumple: (v) => v.length >= 8 },
-  { texto: 'Una letra mayúscula', cumple: (v) => /[A-Z]/.test(v) },
-  { texto: 'Un número', cumple: (v) => /[0-9]/.test(v) },
-  { texto: 'Un carácter especial (!@#$%…)', cumple: (v) => /[^A-Za-z0-9]/.test(v) },
-];
 
 export function PerfilPage() {
   const { usuario, refrescarPerfil } = useAuth();
@@ -34,10 +24,6 @@ export function PerfilPage() {
   const msError = searchParams.get('ms_error');
 
   const [frentes, setFrentes] = useState(null);
-  const [nueva, setNueva] = useState('');
-  const [confirmacion, setConfirmacion] = useState('');
-  const [guardando, setGuardando] = useState(false);
-  const [mensaje, setMensaje] = useState(null);
   const [errorMs, setErrorMs] = useState(null);
 
   useEffect(() => {
@@ -58,25 +44,6 @@ export function PerfilPage() {
   }, [usuario]);
 
   if (!usuario) return null;
-
-  const requisitosOk = REQUISITOS.every((r) => r.cumple(nueva));
-  const coinciden = confirmacion.length > 0 && nueva === confirmacion;
-
-  async function handleCambiarPassword(e) {
-    e.preventDefault();
-    setMensaje(null);
-    setGuardando(true);
-    try {
-      await cambiarPassword(nueva);
-      setNueva('');
-      setConfirmacion('');
-      setMensaje({ tipo: 'ok', texto: 'Contraseña actualizada.' });
-    } catch (err) {
-      setMensaje({ tipo: 'error', texto: err.details?.requisitos_faltantes?.join(', ') ?? err.message ?? 'No se pudo cambiar la contraseña' });
-    } finally {
-      setGuardando(false);
-    }
-  }
 
   async function handleDesvincular() {
     setErrorMs(null);
@@ -147,40 +114,11 @@ export function PerfilPage() {
           )}
         </section>
 
-        <form className={styles.sectionCard} onSubmit={handleCambiarPassword}>
-          <div>
-            <h2 className={styles.sectionTitle}>Cambiar contraseña</h2>
-            <p className={styles.sectionHint}>La nueva contraseña se aplica de inmediato.</p>
-          </div>
-          {mensaje && <div className={mensaje.tipo === 'ok' ? extra.okBanner : styles.errorBanner} role={mensaje.tipo === 'ok' ? 'status' : 'alert'}>{mensaje.texto}</div>}
-          <div className={styles.row}>
-            <Field className="fieldMd" label="Nueva contraseña" required>
-              {(fp) => <TextInput {...fp} type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} />}
-            </Field>
-            <Field className="fieldMd" label="Confirmar contraseña" required error={confirmacion && !coinciden ? 'No coinciden' : undefined}>
-              {(fp) => <TextInput {...fp} type="password" autoComplete="new-password" value={confirmacion} onChange={(e) => setConfirmacion(e.target.value)} />}
-            </Field>
-          </div>
-          <ul className={p.requisitos}>
-            {REQUISITOS.map((r) => (
-              <li key={r.texto} className={r.cumple(nueva) ? p.reqOk : ''}>
-                {r.cumple(nueva) ? <Check size={14} aria-hidden="true" /> : <Circle size={14} aria-hidden="true" />} {r.texto}
-              </li>
-            ))}
-          </ul>
-          <div className={styles.actions}>
-            <span />
-            <Button type="submit" variant="primary" disabled={guardando || !requisitosOk || !coinciden}>
-              {guardando ? 'Guardando...' : 'Cambiar contraseña'}
-            </Button>
-          </div>
-        </form>
-
         <section className={styles.sectionCard}>
           <div className={extra.sectionHead}>
             <div>
               <h2 className={styles.sectionTitle}>Cuenta de Microsoft</h2>
-              <p className={styles.sectionHint}>{usuario.microsoft_email ? `Vinculada a ${usuario.microsoft_email}. Puedes entrar con ella desde el login.` : 'Vincúlala para entrar con "Continuar con Microsoft" sin escribir tu contraseña.'}</p>
+              <p className={styles.sectionHint}>{usuario.microsoft_email ? `Vinculada a ${usuario.microsoft_email}. Puedes entrar con ella desde el login.` : 'Se vincula sola la primera vez que entras con "Continuar con Microsoft".'}</p>
             </div>
             {usuario.microsoft_email ? (
               <Button type="button" variant="danger" onClick={handleDesvincular}>Desvincular</Button>

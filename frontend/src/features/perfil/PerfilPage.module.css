@@ -19,24 +19,3 @@
   text-transform: uppercase;
   color: var(--color-ink-muted);
 }
-
-.requisitos {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 6px;
-  font-size: var(--text-data-size);
-  color: var(--color-ink-muted);
-}
-
-.requisitos li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.reqOk {
-  color: var(--color-success-ink);
-}

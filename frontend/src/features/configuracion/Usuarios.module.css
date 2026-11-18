@@ -177,29 +177,11 @@
    alguno de los campos tiene texto de ayuda/error debajo y otro no -- un
    align-items:flex-end ata la posicion al final de la fila MAS ALTA
    (incluyendo ese texto de ayuda), corriendo el resto de los controles hacia
-   abajo. Ver .actionRow para un boton suelto (sin Field) que necesita
-   alinearse con el input de al lado. */
+   abajo. */
 .row {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-md) var(--space-lg);
-}
-
-/* Boton suelto (no un Field) al lado de un input en la misma fila -- ej.
-   "Generar contraseña aleatoria" junto al campo Contraseña. Reusa el label
-   y el gap de Field.module.css (mismo alto que el label real de al lado,
-   vacio/oculto) para que el boton arranque a la misma altura que el input,
-   sin importar cuanto texto de ayuda tenga el campo debajo. */
-.actionRow {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.actionRowSpacer {
-  font-size: var(--text-label-size);
-  line-height: 1.3;
-  visibility: hidden;
 }
 
 .fieldMd {
@@ -235,13 +217,6 @@
   border-radius: var(--radius-sm);
   padding: var(--space-sm) var(--space-md);
   font-size: var(--text-data-size);
-}
-
-.passwordValue {
-  font-family: var(--font-mono);
-  font-size: var(--text-body-size);
-  font-weight: 600;
-  letter-spacing: 0.02em;
 }
 
 .actions {
@@ -519,41 +494,4 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-}
-
-.resultadoModal {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.resultadoTabla {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-data-size);
-}
-
-.resultadoTabla th {
-  text-align: left;
-  padding: 6px 8px;
-  font-size: var(--text-label-size);
-  text-transform: uppercase;
-  color: var(--color-ink-muted);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.resultadoTabla td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* Aviso bajo el ultimo acceso: reemplaza a la columna "Primer ingreso", que
-   dejaba la tabla mas ancha que el contenedor y ocultaba la columna Estado. */
-.primerIngreso {
-  display: block;
-  margin-top: 2px;
-  font-size: var(--text-label-size);
-  color: var(--color-warning-ink);
 }

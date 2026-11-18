@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute.jsx';
 import { AppShell } from './components/layout/AppShell.jsx';
 import { LoginPage } from './features/auth/LoginPage.jsx';
-import { CambiarPasswordPage } from './features/auth/CambiarPasswordPage.jsx';
 import { DashboardPage } from './features/dashboard/DashboardPage.jsx';
 import { PerfilPage } from './features/perfil/PerfilPage.jsx';
 import { AccesosLayout } from './features/configuracion/AccesosLayout.jsx';
@@ -37,7 +36,6 @@ export default function App() {
     <Routes>
       <Route path="login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
-        <Route path="cambiar-password" element={<CambiarPasswordPage />} />
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="perfil" element={<PerfilPage />} />

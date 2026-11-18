@@ -37,10 +37,6 @@ async function hashPassword(password) {
   return bcrypt.hash(password, 10);
 }
 
-async function verifyPassword(plain, hashed) {
-  return bcrypt.compare(plain, hashed);
-}
-
 // `roles` (array) va en el claim solo a título informativo -- requireAuth
 // SIEMPRE re-lee los roles reales desde la BD, nunca confía en este claim
 // (así un token manipulado no puede escalar privilegios).
@@ -64,7 +60,6 @@ module.exports = {
   REFRESH_COOKIE_NAME,
   MS_LINK_INTENT_COOKIE_NAME,
   hashPassword,
-  verifyPassword,
   createAccessToken,
   createRefreshToken,
   decodeToken,

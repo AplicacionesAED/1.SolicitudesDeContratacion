@@ -130,78 +130,6 @@
   color: var(--color-ink-muted);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.label {
-  font-size: var(--text-label-size);
-  font-weight: var(--text-label-weight);
-  letter-spacing: var(--text-label-tracking);
-  text-transform: uppercase;
-  color: var(--color-ink-secondary);
-}
-
-.inputWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.inputIcon {
-  position: absolute;
-  left: 14px;
-  color: var(--color-ink-muted);
-  pointer-events: none;
-}
-
-.input {
-  width: 100%;
-  height: 48px;
-  padding: 0 44px 0 44px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  font-family: var(--font-body);
-  font-size: var(--text-body-size);
-  color: var(--color-ink);
-  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard);
-}
-
-.input::placeholder {
-  color: var(--color-ink-muted);
-  opacity: 0.7;
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  background: #fff;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 16%, transparent);
-}
-
-.toggle {
-  position: absolute;
-  right: 6px;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-ink-muted);
-  cursor: pointer;
-}
-
-.toggle:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-ink);
-}
-
 .alert {
   margin: 0;
   padding: 10px 14px;
@@ -211,59 +139,11 @@
   font-size: var(--text-data-size);
 }
 
-.submit {
-  height: 50px;
-  margin-top: 4px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-primary-ink-on);
-  font-family: var(--font-body);
-  font-size: var(--text-body-size);
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-primary) 35%, transparent);
-  transition: background-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
-}
-
-.submit:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.submit:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.submit:disabled {
-  opacity: 0.65;
-  cursor: progress;
-}
-
 .footnote {
   margin: 0;
   text-align: center;
   font-size: var(--text-label-size);
   color: var(--color-ink-muted);
-}
-
-/* Inicio de sesion con Microsoft (SSO de Azure AD) -- Solicitudes lo tiene y el HRMS no. Mismo alto,
-   radio y tipografia que `.submit`, pero secundario (contorno) para que el boton principal siga siendo
-   el de correo y contrasena. */
-.divider {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  margin: 0;
-  color: var(--color-ink-muted);
-  font-size: var(--text-label-size);
-}
-
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
 }
 
 .sso {
@@ -312,75 +192,5 @@
 
   .formCard {
     padding: 28px 20px 24px;
-  }
-}
-
-/* CambiarPasswordPage.jsx: la misma tarjeta del login centrada sobre el lienzo, sin
-   panel de marca (se llega justo despues de iniciar sesion). */
-.soloPanel {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-xl);
-  background: var(--color-bg);
-}
-
-/* Requisitos de la contrasena: se marcan en vivo. */
-.requisitos {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
-  margin: -4px 0 2px;
-  padding: 0;
-  list-style: none;
-  font-size: var(--text-data-size);
-  color: var(--color-ink-muted);
-}
-
-.requisitos li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.requisitos li svg {
-  flex-shrink: 0;
-}
-
-.requisitoOk {
-  color: var(--color-success-ink);
-  font-weight: 600;
-}
-
-.coincide,
-.noCoincide {
-  font-size: var(--text-label-size);
-}
-
-.coincide {
-  color: var(--color-success-ink);
-}
-
-.noCoincide {
-  color: var(--color-danger-ink);
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-  .soloPanel {
-    padding: var(--space-md);
-  }
-
-  .requisitos {
-    grid-template-columns: 1fr;
   }
 }

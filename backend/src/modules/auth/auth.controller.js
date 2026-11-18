@@ -26,9 +26,4 @@ const refresh = asyncHandler(async (req, res) => {
   ok(res, { detail: 'Token renovado' });
 });
 
-const cambiarPassword = asyncHandler(async (req, res) => {
-  await service.cambiarPassword(req.usuario, req.body.nueva_password);
-  ok(res, { detail: 'Contraseña actualizada' });
-});
-
-module.exports = { logout, refresh, cambiarPassword };
+module.exports = { logout, refresh };

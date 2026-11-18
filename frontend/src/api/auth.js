@@ -8,10 +8,6 @@ export function logout() {
   return client.post('/auth/logout');
 }
 
-export function cambiarPassword(nuevaPassword) {
-  return client.post('/auth/cambiar-password', { nueva_password: nuevaPassword });
-}
-
 export function getMe() {
   return client.get('/usuarios/me');
 }
