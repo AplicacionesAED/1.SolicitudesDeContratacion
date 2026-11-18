@@ -3,10 +3,11 @@
 // next-auth/providers/azure-ad, ver src/lib/auth.ts). Flujo de código de
 // autorización estándar (authorization code + PKCE no requerido para un
 // confidential client). Mismo comportamiento que el `signIn`/`jwt` callback
-// original: sin `microsoftId` vinculado -> OAuthAccountNotFound/OAuthNotLinked,
-// usuario inactivo -> OAuthAccountInactive, éxito -> mismas cookies de sesión
+// original: sin usuario con ese correo -> OAuthAccountNotFound (el primer ingreso
+// vincula la cuenta por correo, como SIGER), usuario inactivo -> OAuthAccountInactive, éxito -> mismas cookies de sesión
 // que el login por contraseña.
 const msal = require('@azure/msal-node');
+const { Op } = require('sequelize');
 const asyncHandler = require('../../utils/asyncHandler');
 const { ACCESS_TOKEN_EXPIRE_HOURS, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME, MS_LINK_INTENT_COOKIE_NAME, createAccessToken, createRefreshToken } = require('../../utils/security');
 const Usuario = require('../usuario/usuario.model');
@@ -81,13 +82,14 @@ const callback = asyncHandler(async (req, res) => {
     }
   }
 
-  // Login normal: el microsoftId tiene que estar ya vinculado a un usuario.
-  const usuario = await usuarioService.buscarPorMicrosoftId(microsoftId);
-  if (!usuario) {
-    const usuarioPorEmail = microsoftEmail ? await Usuario.findOne({ where: { email: microsoftEmail } }) : null;
-    const razon = usuarioPorEmail ? 'OAuthNotLinked' : 'OAuthAccountNotFound';
-    return res.redirect(`${FRONTEND_URL}/login?error=${razon}`);
+  // Login normal. Primer ingreso (igual que SIGER): si el microsoftId todavía no está vinculado, se vincula solo por
+  // el correo con el que el admin creó el usuario (email o microsoft_email). Sin usuario con ese correo -> NotFound.
+  let usuario = await usuarioService.buscarPorMicrosoftId(microsoftId);
+  if (!usuario && microsoftEmail) {
+    usuario = await Usuario.findOne({ where: { [Op.or]: [{ email: microsoftEmail }, { microsoft_email: microsoftEmail }] } });
+    if (usuario?.activo) await usuario.update({ microsoft_id: microsoftId, microsoft_email: microsoftEmail });
   }
+  if (!usuario) return res.redirect(`${FRONTEND_URL}/login?error=OAuthAccountNotFound`);
   if (!usuario.activo) {
     return res.redirect(`${FRONTEND_URL}/login?error=OAuthAccountInactive`);
   }
