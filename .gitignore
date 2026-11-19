@@ -54,3 +54,5 @@ playwright-report/
 test-results/
 # Capturas de pantalla sueltas en la raíz (verificaciones visuales)
 /*.png
+# Prototipo de referencia del cuadro comparativo (solo local)
+/cuadro-comparativo.html

@@ -25,6 +25,7 @@ import { SolicitudDetallePage } from './features/solicitudes/SolicitudDetallePag
 import { NuevaSolicitudTipoPage } from './features/solicitudes/NuevaSolicitudTipoPage.jsx';
 import { NuevaContratoPage } from './features/solicitudes/NuevaContratoPage.jsx';
 import { NuevaOrdenServicioPage } from './features/solicitudes/NuevaOrdenServicioPage.jsx';
+import { NuevaOrdenServicioV2Page } from './features/solicitudes/NuevaOrdenServicioV2Page.jsx';
 import { NuevoOtrosiTiempoPage } from './features/solicitudes/NuevoOtrosiTiempoPage.jsx';
 import { NuevoOtrosiTiempoCantidadPage } from './features/solicitudes/NuevoOtrosiTiempoCantidadPage.jsx';
 import { EditarSolicitudPage } from './features/solicitudes/EditarSolicitudPage.jsx';
@@ -72,7 +73,8 @@ export default function App() {
                 (crearNormal en solicitud.service.js) por si alguien la
                 fuerza igual. */}
             <Route path="solicitudes-directas/nueva/contrato" element={<Navigate to="/solicitudes-directas/nueva" replace />} />
-            <Route path="solicitudes-directas/nueva/orden-servicio" element={<NuevaOrdenServicioPage categoria="DIRECTA" />} />
+            {/* Directa usa el formulario V2 (cuadro comparativo tipo hoja de cálculo); Indirecta e importar histórico siguen con SolicitudForm. */}
+            <Route path="solicitudes-directas/nueva/orden-servicio" element={<NuevaOrdenServicioV2Page categoria="DIRECTA" />} />
             <Route path="solicitudes-directas/nueva/otrosi-tiempo" element={<NuevoOtrosiTiempoPage categoria="DIRECTA" />} />
             <Route path="solicitudes-directas/nueva/otrosi-tiempo-cantidad" element={<NuevoOtrosiTiempoCantidadPage categoria="DIRECTA" />} />
             {/* "Importar histórico" es, en el fondo, otra forma de crear una

@@ -1,0 +1,455 @@
+/* Variante V2 del formulario por pasos (experimento): tarjeta unica compacta, chips de frentes, pie fijo y pantalla final de revisión. */
+/* Pagina: ancho maximo centrado y separacion compacta. */
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.paginaAncha {
+  /* El paso de la cuadrícula necesita más ancho para verse completa sin scroll horizontal. */
+  max-width: 1360px;
+}
+
+.stepperCompacto button {
+  min-height: 40px;
+  padding-block: 0;
+}
+
+.apoyo {
+  margin: -4px 0 0;
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.contenido {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
+  min-width: 0;
+}
+
+/* Un solo contenedor tipo tarjeta: las secciones visibles se separan con una linea divisoria. */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  min-width: 0;
+}
+
+.card > div {
+  gap: 14px;
+}
+
+.card > div:not([hidden]) ~ div:not([hidden]) {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Campos compactos dentro de la tarjeta (los de Field/Combobox traen 44 px). */
+.card input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.card select {
+  min-height: 38px;
+}
+
+.seccionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.proyectoTitulo {
+  font-weight: 400;
+  color: var(--color-ink-muted);
+}
+
+.buscar {
+  width: 220px;
+  max-width: 100%;
+  font: inherit;
+  font-size: var(--text-data-size);
+  padding: 0 12px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+.buscar:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.proyecto {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.proyectoNombre {
+  margin: 0;
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.etapaFila {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: start;
+}
+
+.etapaLabel {
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+  line-height: 32px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--text-data-size);
+  cursor: pointer;
+  user-select: none;
+}
+
+.chip:hover {
+  border-color: var(--color-primary);
+}
+
+.chipActivo {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Checkbox real, oculto solo visualmente: sigue en el orden de tabulacion y lo leen los lectores de pantalla. */
+.chipInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.chip:has(.chipInput:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.enlace {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  line-height: 32px;
+  color: var(--color-primary);
+  text-decoration: underline;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.enlace:focus-visible,
+.editar:focus-visible,
+.chevron:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.vacio {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-data-size);
+}
+
+.filaContratista {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Datos del contratista: franja de una linea, desplegable. */
+.franja {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+.franjaAviso {
+  border-color: var(--color-warning-ink);
+  background: var(--color-warning-surface);
+}
+
+.franja > span:first-child {
+  flex-basis: 32px;
+  height: 32px;
+  font-size: var(--text-data-size);
+}
+
+.franjaNombre {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.franjaNombre strong,
+.franjaNombre span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.franjaNombre span {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.franjaEstado,
+.franjaOk {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.franjaEstado {
+  color: var(--color-warning-ink);
+}
+
+.franjaOk {
+  color: var(--color-success-ink);
+}
+
+.chevron {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+}
+
+.chevronAbierto {
+  transform: rotate(180deg);
+}
+
+.card .datosGrid3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.sinDato {
+  color: var(--color-ink-muted);
+}
+
+/* Pie fijo: barra sin tarjeta, pegada al borde inferior. */
+.pie {
+  position: sticky;
+  /* Pegado al borde real de la ventana: el área de scroll del AppShell tiene padding (32px; 24px en pantallas angostas). */
+  bottom: calc(-1 * var(--space-xl));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: 12px 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.pieEstado {
+  flex: 1 1 auto;
+  margin-left: var(--space-sm);
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+@media (max-width: 768px) {
+  .pie {
+    bottom: calc(-1 * var(--space-lg));
+  }
+}
+
+@media (max-width: 900px) {
+  .card .datosGrid3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .filaContratista {
+    grid-template-columns: 1fr;
+  }
+
+  .etapaFila {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .etapaLabel,
+  .enlace {
+    line-height: 1.4;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  /* Stepper angosto: solo el paso actual muestra su nombre, los demas quedan en un circulo numerado. */
+  .stepperCompacto li {
+    flex: 0 0 auto;
+  }
+
+  .stepperCompacto li[aria-current='step'] {
+    flex: 1 1 auto;
+  }
+
+  .stepperCompacto li:not([aria-current='step']) button {
+    padding-inline: 8px;
+  }
+
+  .stepperCompacto li:not([aria-current='step']) button > span:last-child {
+    display: none;
+  }
+
+  .franja {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .card .datosGrid3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resumen {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.tarjeta {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.tarjetaOk {
+  border-color: var(--color-success-ink);
+}
+
+.tarjetaPendiente {
+  border-color: var(--color-warning-ink);
+  background: var(--color-warning-surface);
+}
+
+.tarjetaHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.tarjetaHead h3 {
+  margin: 0;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+}
+
+.editar {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.filas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-sm) var(--space-lg);
+  margin: 0;
+}
+
+.filas dt {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.filas dd {
+  margin: 0;
+  font-size: var(--text-data-size);
+  overflow-wrap: anywhere;
+}
+
+.faltaLista {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-warning-ink);
+  font-size: var(--text-data-size);
+}
+
+.total {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .filas {
+    grid-template-columns: 1fr;
+  }
+}
