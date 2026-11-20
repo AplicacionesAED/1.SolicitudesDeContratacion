@@ -62,23 +62,11 @@
   color: #fff;
 }
 
-.solicitudCell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
 .consecutivo {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 600;
   font-size: var(--text-data-size);
   color: var(--color-ink);
-}
-
-.subLine {
-  font-size: 12px;
-  color: var(--color-ink-muted);
 }
 
 .tocaTi {
@@ -93,41 +81,8 @@
   vertical-align: middle;
 }
 
-.etapaCell {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 150px;
-}
-
-.progress {
-  position: relative;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--color-surface-sunken);
-  overflow: hidden;
-}
-
-.progressFill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 2px;
-  background: var(--color-primary);
-}
-
-.progressDone {
-  background: var(--color-success-ink);
-}
-
-.paso {
-  font-size: 12px;
-  color: var(--color-ink-muted);
-}
-
-.poderCell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.celdaNoWrap {
+  white-space: nowrap;
 }
 
 .dias {
@@ -177,4 +132,14 @@
 
 .valorTotal {
   font-weight: 600;
+}
+
+/* Filas bajas: una sola linea por celda. */
+.tablaCompacta tbody td {
+  padding: 8px 8px;
+}
+
+.tablaCompacta thead th {
+  padding-left: 8px;
+  padding-right: 8px;
 }

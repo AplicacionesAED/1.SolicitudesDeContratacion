@@ -131,6 +131,10 @@ export function SolicitudesPage({ categoria }) {
       etapa: (s) => avance(s)?.actual ?? 0,
       dias: (s) => s.diasEnPaso,
       fechaSolicitud: (s) => new Date(s.fechaSolicitud).getTime(),
+      tipo: (s) => TIPO_SOLICITUD_LABELS[s.tipo] ?? s.tipo,
+      nit: (s) => s.tercero?.nit ?? '',
+      poder: (s) => s.enPoderDe?.nombre ?? '',
+      solicitante: (s) => s.solicitante?.nombre ?? '',
     }),
     []
   );
@@ -242,69 +246,74 @@ export function SolicitudesPage({ categoria }) {
       </div>
 
       <div className={b.avanzados}>
-          <label className={styles.filterField}>
-            <span>Tipo</span>
-            <select className={styles.control} value={filtroTipo} onChange={cambiar(setFiltroTipo)}>
-              <option value="">Todos</option>
-              {Object.entries(TIPO_SOLICITUD_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.filterField}>
-            <span>Proyecto</span>
-            <select className={styles.control} value={filtroProyecto} onChange={(e) => { setFiltroProyecto(e.target.value); setFiltroFrente(''); setPage(1); }}>
-              <option value="">Todos</option>
-              {proyectos.map((pr) => (
-                <option key={pr.id} value={pr.id}>{pr.nombre}</option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.filterField}>
-            <span>Frente</span>
-            <select className={styles.control} value={filtroFrente} onChange={cambiar(setFiltroFrente)} disabled={frentesFiltrados.length === 0}>
-              <option value="">Todos</option>
-              {frentesFiltrados.map((f) => (
-                <option key={f.id} value={f.id}>{f.nombre}</option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.filterField}>
-            <span>Fecha desde</span>
-            <input type="date" className={styles.control} value={filtroFechaDesde} onChange={cambiar(setFiltroFechaDesde)} />
-          </label>
-          <label className={styles.filterField}>
-            <span>Fecha hasta</span>
-            <input type="date" className={styles.control} value={filtroFechaHasta} min={filtroFechaDesde || undefined} onChange={cambiar(setFiltroFechaHasta)} />
-          </label>
-          {/* Dinero: nunca type="number" (ver CuadroComparativoBuilder.jsx#"Valor unitario") -- texto + soloDigitos/formatearMiles. */}
-          <label className={styles.filterField}>
-            <span>Valor mínimo</span>
-            <input type="text" inputMode="numeric" className={styles.control} placeholder="0" value={formatearMiles(filtroValorMin)} onChange={(e) => { setFiltroValorMin(soloDigitos(e.target.value)); setPage(1); }} />
-          </label>
-          <label className={styles.filterField}>
-            <span>Valor máximo</span>
-            <input type="text" inputMode="numeric" className={styles.control} placeholder="Sin límite" value={formatearMiles(filtroValorMax)} onChange={(e) => { setFiltroValorMax(soloDigitos(e.target.value)); setPage(1); }} />
-          </label>
+        <label className={styles.filterField}>
+          <span>Tipo</span>
+          <select className={styles.control} value={filtroTipo} onChange={cambiar(setFiltroTipo)}>
+            <option value="">Todos</option>
+            {Object.entries(TIPO_SOLICITUD_LABELS).map(([v, l]) => (
+              <option key={v} value={v}>{l}</option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.filterField}>
+          <span>Proyecto</span>
+          <select className={styles.control} value={filtroProyecto} onChange={(e) => { setFiltroProyecto(e.target.value); setFiltroFrente(''); setPage(1); }}>
+            <option value="">Todos</option>
+            {proyectos.map((pr) => (
+              <option key={pr.id} value={pr.id}>{pr.nombre}</option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.filterField}>
+          <span>Frente</span>
+          <select className={styles.control} value={filtroFrente} onChange={cambiar(setFiltroFrente)} disabled={frentesFiltrados.length === 0}>
+            <option value="">Todos</option>
+            {frentesFiltrados.map((f) => (
+              <option key={f.id} value={f.id}>{f.nombre}</option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.filterField}>
+          <span>Fecha desde</span>
+          <input type="date" className={styles.control} value={filtroFechaDesde} onChange={cambiar(setFiltroFechaDesde)} />
+        </label>
+        <label className={styles.filterField}>
+          <span>Fecha hasta</span>
+          <input type="date" className={styles.control} value={filtroFechaHasta} min={filtroFechaDesde || undefined} onChange={cambiar(setFiltroFechaHasta)} />
+        </label>
+        {/* Dinero: nunca type="number" (ver CuadroComparativoBuilder.jsx#"Valor unitario") -- texto + soloDigitos/formatearMiles. */}
+        <label className={styles.filterField}>
+          <span>Valor mínimo</span>
+          <input type="text" inputMode="numeric" className={styles.control} placeholder="0" value={formatearMiles(filtroValorMin)} onChange={(e) => { setFiltroValorMin(soloDigitos(e.target.value)); setPage(1); }} />
+        </label>
+        <label className={styles.filterField}>
+          <span>Valor máximo</span>
+          <input type="text" inputMode="numeric" className={styles.control} placeholder="Sin límite" value={formatearMiles(filtroValorMax)} onChange={(e) => { setFiltroValorMax(soloDigitos(e.target.value)); setPage(1); }} />
+        </label>
       </div>
 
       <div className={styles.tableWrap}>
-        <table className={styles.table}>
+        <table className={`${styles.table} ${b.tablaCompacta}`}>
           <thead>
             <tr>
               <th aria-sort={ariaSort(sort, 'consecutivo')}><SortHeader label="Solicitud" sortKey="consecutivo" sort={sort} onSort={toggleSort} /></th>
+              <th aria-sort={ariaSort(sort, 'tipo')}><SortHeader label="Tipo" sortKey="tipo" sort={sort} onSort={toggleSort} /></th>
               <th aria-sort={ariaSort(sort, 'tercero')}><SortHeader label="Contratista" sortKey="tercero" sort={sort} onSort={toggleSort} /></th>
+              <th aria-sort={ariaSort(sort, 'nit')}><SortHeader label="NIT" sortKey="nit" sort={sort} onSort={toggleSort} /></th>
               <th aria-sort={ariaSort(sort, 'valorFinal')}><SortHeader label="Valor" sortKey="valorFinal" sort={sort} onSort={toggleSort} /></th>
               <th aria-sort={ariaSort(sort, 'etapa')}><SortHeader label="Etapa" sortKey="etapa" sort={sort} onSort={toggleSort} /></th>
-              <th aria-sort={ariaSort(sort, 'dias')}><SortHeader label="En poder de" sortKey="dias" sort={sort} onSort={toggleSort} /></th>
+              <th aria-sort={ariaSort(sort, 'poder')}><SortHeader label="En poder de" sortKey="poder" sort={sort} onSort={toggleSort} /></th>
+              <th aria-sort={ariaSort(sort, 'dias')}><SortHeader label="Días" sortKey="dias" sort={sort} onSort={toggleSort} /></th>
+              <th aria-sort={ariaSort(sort, 'solicitante')}><SortHeader label="Solicitante" sortKey="solicitante" sort={sort} onSort={toggleSort} /></th>
+              <th aria-sort={ariaSort(sort, 'fechaSolicitud')}><SortHeader label="Fecha" sortKey="fechaSolicitud" sort={sort} onSort={toggleSort} /></th>
             </tr>
           </thead>
           <tbody>
             {cargando ? (
-              <tr><td colSpan={5} className={styles.emptyState}>Cargando...</td></tr>
+              <tr><td colSpan={10} className={styles.emptyState}>Cargando...</td></tr>
             ) : pagina.length === 0 ? (
               <tr>
-                <td colSpan={5} className={styles.emptyState}>
+                <td colSpan={10} className={styles.emptyState}>
                   {vistaActual.key === 'mias' ? 'No tienes solicitudes pendientes de tu acción. ' : 'Sin solicitudes en esta vista. '}
                   {conteos.todas > 0 && vistaActual.key !== 'todas' && (
                     <button type="button" className={styles.clearBtn} onClick={() => setVista('todas')}>Ver todas</button>
@@ -313,67 +322,41 @@ export function SolicitudesPage({ categoria }) {
               </tr>
             ) : (
               pagina.map((s) => {
-                const av = avance(s);
                 const g = gravedad(s.diasEnPaso);
                 const enFlujo = ESTADOS_EN_TRAMITE.includes(s.estado);
+                const vacio = <span className={styles.muted}>—</span>;
                 return (
                   <tr
                     key={s.id}
                     className={`${styles.clickableRow} ${s.requiereMiAccion ? b.filaTocaTi : ''} ${enFlujo && g === 'critico' ? b.filaCritica : enFlujo && g === 'atencion' ? b.filaAtencion : ''}`}
                     onClick={() => navigate(`/solicitudes/${s.id}`)}
                   >
+                    <td className={b.celdaNoWrap}>
+                      <span className={b.consecutivo}>{s.consecutivo}</span>
+                      {s.requiereMiAccion && <span className={b.tocaTi}>Te toca</span>}
+                    </td>
+                    <td className={b.celdaNoWrap}>{TIPO_SOLICITUD_LABELS[s.tipo] ?? s.tipo}</td>
+                    <td>{s.tercero?.razonSocial ? <span className={styles.personaNombre}>{s.tercero.razonSocial}</span> : vacio}</td>
+                    <td className={b.celdaNoWrap}>{s.tercero?.nit || vacio}</td>
+                    <td className={b.celdaNoWrap}>{s.valorFinal ? formatCurrency(s.valorFinal) : vacio}</td>
                     <td>
-                      <div className={b.solicitudCell}>
-                        <span>
-                          <span className={b.consecutivo}>{s.consecutivo}</span>
-                          {s.requiereMiAccion && <span className={b.tocaTi}>Te toca</span>}
+                      <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <SolicitudBadge estado={s.estado} />
+                        {s.importadoHistorico && <HistoricoBadge numeroOtrosi={s.numeroOtrosi} />}
+                      </span>
+                    </td>
+                    <td>
+                      {enFlujo ? (s.enPoderDe?.nombre ?? <span className={styles.muted}>Según el frente</span>) : ESTADOS_POR_CORREGIR.includes(s.estado) ? <span className={styles.muted}>{s.solicitante?.nombre ?? 'Solicitante'}</span> : vacio}
+                    </td>
+                    <td className={b.celdaNoWrap}>
+                      {enFlujo && s.diasEnPaso != null ? (
+                        <span className={`${b.dias} ${g === 'critico' ? b.diasCritico : g === 'atencion' ? b.diasAtencion : b.diasOk}`}>
+                          {s.diasEnPaso === 0 ? 'Hoy' : `${s.diasEnPaso} día${s.diasEnPaso === 1 ? '' : 's'}`}
                         </span>
-                        <span className={b.subLine}>
-                          {TIPO_SOLICITUD_LABELS[s.tipo] ?? s.tipo} · {s.solicitante?.nombre ?? '—'} · {new Date(s.fechaSolicitud).toLocaleDateString('es-CO')}
-                        </span>
-                      </div>
+                      ) : vacio}
                     </td>
-                    <td>
-                      {s.tercero ? (
-                        <div className={b.solicitudCell}>
-                          <span className={styles.personaNombre}>{s.tercero.razonSocial}</span>
-                          <span className={b.subLine}>{s.tercero.nit}</span>
-                        </div>
-                      ) : (
-                        <span className={styles.muted}>—</span>
-                      )}
-                    </td>
-                    <td>{s.valorFinal ? formatCurrency(s.valorFinal) : <span className={styles.muted}>—</span>}</td>
-                    <td>
-                      <div className={b.etapaCell}>
-                        <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <SolicitudBadge estado={s.estado} />
-                          {s.importadoHistorico && <HistoricoBadge numeroOtrosi={s.numeroOtrosi} />}
-                        </span>
-                        {av && (
-                          <>
-                            <div className={b.progress} aria-hidden="true">
-                              <div className={`${b.progressFill} ${s.estado === 'COMPLETADA' ? b.progressDone : ''}`} style={{ width: `${av.pct}%` }} />
-                            </div>
-                            <span className={b.paso}>Paso {av.actual} de {av.total}</span>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      {enFlujo ? (
-                        <div className={b.poderCell}>
-                          <span>{s.enPoderDe?.nombre ?? <span className={styles.muted}>Según el frente</span>}</span>
-                          <span className={`${b.dias} ${g === 'critico' ? b.diasCritico : g === 'atencion' ? b.diasAtencion : b.diasOk}`}>
-                            {s.diasEnPaso === 0 ? 'Hoy' : `${s.diasEnPaso} día${s.diasEnPaso === 1 ? '' : 's'} en este paso`}
-                          </span>
-                        </div>
-                      ) : ESTADOS_POR_CORREGIR.includes(s.estado) ? (
-                        <span className={styles.muted}>{s.solicitante?.nombre ?? 'Solicitante'}</span>
-                      ) : (
-                        <span className={styles.muted}>—</span>
-                      )}
-                    </td>
+                    <td>{s.solicitante?.nombre ?? vacio}</td>
+                    <td className={b.celdaNoWrap}>{new Date(s.fechaSolicitud).toLocaleDateString('es-CO')}</td>
                   </tr>
                 );
               })
