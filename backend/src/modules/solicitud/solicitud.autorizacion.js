@@ -14,7 +14,7 @@
 //
 // La SECUENCIA de estados (quién puede ir a dónde) sigue fija acá, a
 // propósito -- eso nunca fue lo que se pidió hacer configurable.
-const { tienePermiso } = require('../../utils/permisos');
+const { tienePermiso, getRolesPorCodigo } = require('../../utils/permisos');
 const AprobadorFrente = require('../aprobadorFrente/aprobadorFrente.model');
 
 // ANULAR (2026-09-09, pedido del usuario: "no quiero eliminarlas
@@ -260,7 +260,19 @@ function resolverSlot(accion, estadoActual, categoria) {
   return ACCION_SLOT_FIJO[accion] ?? null;
 }
 
+// Controles (2026-11-20): quienes tienen el rol de Controles actúan en TODOS los frentes en los pasos de Controles, sin
+// depender de que el slot de cada frente los incluya. El rol se resuelve por su código estable (el nombre puede cambiar).
+// Coordinador de Controles (CONTROLES): proyección y Adpro; Director de Controles (DIRECTOR_CONTROLES): aprobación final.
+const CODIGO_ROL_CONTROLES_POR_SLOT = {
+  controles_proyeccion: 'CONTROLES',
+  controles_adpro: 'CONTROLES',
+  director_controles: 'DIRECTOR_CONTROLES',
+  controles_aprobacion_final: 'DIRECTOR_CONTROLES',
+};
+
 async function usuarioAutorizadoParaSlot(frenteIds, usuario, campoSlot, categoria) {
+  const codigoRolControles = CODIGO_ROL_CONTROLES_POR_SLOT[campoSlot];
+  if (codigoRolControles && (usuario.roles ?? []).includes((await getRolesPorCodigo())[codigoRolControles])) return true;
   if (!frenteIds.length) return false;
   const config = await AprobadorFrente.findOne({ where: { frente_id: frenteIds, categoria } });
   const slot = config?.[campoSlot] ?? { usuarios: [], roles: [] };

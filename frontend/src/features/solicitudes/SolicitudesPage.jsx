@@ -6,7 +6,7 @@
 //  - Exportar a CSV lo que se esta viendo.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, SlidersHorizontal } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { listSolicitudes } from '../../api/solicitudes.js';
 import { listProyectos } from '../../api/proyectos.js';
 import { listFrentes } from '../../api/frentes.js';
@@ -62,7 +62,6 @@ export function SolicitudesPage({ categoria }) {
   const [vista, setVista] = useState(null); // null = aun sin elegir (se decide al cargar)
   const [busqueda, setBusqueda] = usePersistentState(`solicitudes-list:busqueda:${slug}`, '');
   const [filtroTipo, setFiltroTipo] = useState('');
-  const [mostrarMas, setMostrarMas] = useState(false);
   const [filtroProyecto, setFiltroProyecto] = useState('');
   const [filtroFrente, setFiltroFrente] = useState('');
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
@@ -107,10 +106,6 @@ export function SolicitudesPage({ categoria }) {
 
   const conteos = useMemo(() => Object.fromEntries(VISTAS.map((v) => [v.key, solicitudes.filter(v.test).length])), [VISTAS, solicitudes]);
   const vistaActual = VISTAS.find((v) => v.key === vista) ?? VISTAS[VISTAS.length - 1];
-
-  const enTramite = solicitudes.filter((s) => ESTADOS_EN_TRAMITE.includes(s.estado));
-  const valorEnTramite = enTramite.reduce((sum, s) => sum + Number(s.valorFinal ?? 0), 0);
-  const demoradas = enTramite.filter((s) => (s.diasEnPaso ?? 0) >= 8).length;
 
   const frentesFiltrados = filtroProyecto ? frentes.filter((f) => String(f.proyecto_id) === String(filtroProyecto)) : frentes;
 
@@ -188,13 +183,6 @@ export function SolicitudesPage({ categoria }) {
     setPage(1);
   };
 
-  const tarjetas = [
-    { key: 'mias', valor: conteos.mias ?? 0, label: 'Requieren tu acción', hint: 'Empieza por estas', ir: 'mias' },
-    { key: 'tramite', valor: conteos.tramite ?? 0, label: 'En trámite', hint: valorEnTramite ? `${formatCurrency(valorEnTramite)} en juego` : 'Sin valor registrado', ir: 'tramite' },
-    { key: 'demoradas', valor: demoradas, label: 'Con 8+ días en el mismo paso', hint: demoradas ? 'Conviene moverlas' : 'Todo fluye', ir: 'tramite' },
-    { key: 'corregir', valor: conteos.corregir ?? 0, label: 'Por corregir', hint: 'Devueltas o en revisión', ir: 'corregir' },
-  ];
-
   return (
     <div className={styles.page}>
       <div className={styles.listHeader}>
@@ -218,18 +206,6 @@ export function SolicitudesPage({ categoria }) {
           )}
         </div>
       </div>
-
-      {!cargando && (
-        <div className={styles.kpiRow}>
-          {tarjetas.map((t) => (
-            <button key={t.key} type="button" className={`${styles.kpiCard} ${b.kpiClickable}`} onClick={() => { setVista(t.ir); setPage(1); }}>
-              <span className={styles.kpiValor}>{t.valor}</span>
-              <span className={styles.kpiLabel}>{t.label}</span>
-              <span className={b.kpiHint}>{t.hint}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {error && (
         <div className={styles.errorBanner} role="alert">
@@ -258,9 +234,6 @@ export function SolicitudesPage({ categoria }) {
           <span>Buscar</span>
           <input type="text" className={styles.control} placeholder="Consecutivo, contratista, NIT o solicitante..." value={busqueda} onChange={cambiar(setBusqueda)} aria-label="Buscar solicitudes" />
         </label>
-        <button type="button" className={b.masFiltros} onClick={() => setMostrarMas((v) => !v)} aria-expanded={mostrarMas}>
-          <SlidersHorizontal size={13} aria-hidden="true" /> Más filtros{avanzadosActivos > 0 ? ` (${avanzadosActivos})` : ''}
-        </button>
         {(busqueda || avanzadosActivos > 0) && (
           <button type="button" className={styles.clearBtn} onClick={limpiar}>
             Limpiar filtros
@@ -268,8 +241,7 @@ export function SolicitudesPage({ categoria }) {
         )}
       </div>
 
-      {mostrarMas && (
-        <div className={b.avanzados}>
+      <div className={b.avanzados}>
           <label className={styles.filterField}>
             <span>Tipo</span>
             <select className={styles.control} value={filtroTipo} onChange={cambiar(setFiltroTipo)}>
@@ -314,8 +286,7 @@ export function SolicitudesPage({ categoria }) {
             <span>Valor máximo</span>
             <input type="text" inputMode="numeric" className={styles.control} placeholder="Sin límite" value={formatearMiles(filtroValorMax)} onChange={(e) => { setFiltroValorMax(soloDigitos(e.target.value)); setPage(1); }} />
           </label>
-        </div>
-      )}
+      </div>
 
       <div className={styles.tableWrap}>
         <table className={styles.table}>
