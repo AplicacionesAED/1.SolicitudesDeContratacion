@@ -202,7 +202,7 @@ export function SolicitudFormV2({ tipoSolicitud, categoria, isEdit = false, init
       if (verTodos) {
         setFrentes(res.data);
       } else {
-        const asignados = res.data.filter((f) => f.usuarioIds?.includes(usuario.id));
+        const asignados = res.data.filter((f) => f.usuarioIdsPorCategoria?.[categoriaEfectiva]?.includes(usuario.id));
         setFrentes(asignados.length > 0 ? asignados : res.data);
       }
       void rol0;

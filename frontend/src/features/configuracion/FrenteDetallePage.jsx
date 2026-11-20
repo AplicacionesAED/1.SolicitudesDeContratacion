@@ -133,7 +133,10 @@ export function FrenteDetallePage() {
   const [aprobadores, setAprobadores] = useState({ DIRECTA: null, INDIRECTA: null });
   const [categoriaTab, setCategoriaTab] = useState('INDIRECTA');
   const [datosForm, setDatosForm] = useState({ nombre: '', etapa: '', proyecto_id: '' });
-  const [usuarioIds, setUsuarioIds] = useState([]);
+  // Las personas de cada frente son independientes entre Directa e Indirecta (2026-11-20): se edita la de la pestaña activa.
+  const [usuariosPorCategoria, setUsuariosPorCategoria] = useState({ DIRECTA: [], INDIRECTA: [] });
+  const usuarioIds = usuariosPorCategoria[categoriaTab];
+  const setUsuarioIds = (ids) => setUsuariosPorCategoria((prev) => ({ ...prev, [categoriaTab]: ids }));
   const [desvios, setDesvios] = useState([]);
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(null);
@@ -143,7 +146,8 @@ export function FrenteDetallePage() {
       .then(([frenteRes, usuariosRes, proyectosRes, aprobadorDirectaRes, aprobadorIndirectaRes, desviosRes, rolesRes]) => {
         setFrente(frenteRes.data);
         setDatosForm({ nombre: frenteRes.data.nombre, etapa: frenteRes.data.etapa ?? '', proyecto_id: frenteRes.data.proyecto_id });
-        setUsuarioIds(frenteRes.data.usuarios.map((u) => u.id));
+        const asignadas = (cat) => frenteRes.data.asignaciones.filter((a) => a.categoria === cat).map((a) => a.usuario_id);
+        setUsuariosPorCategoria({ DIRECTA: asignadas('DIRECTA'), INDIRECTA: asignadas('INDIRECTA') });
         setUsuarios(usuariosRes.data);
         setProyectos(proyectosRes.data);
         setAprobadores({ DIRECTA: aprobadorDirectaRes.data, INDIRECTA: aprobadorIndirectaRes.data });
@@ -187,7 +191,7 @@ export function FrenteDetallePage() {
     setGuardando('usuarios');
     setError(null);
     try {
-      await setFrenteUsuarios(id, usuarioIds);
+      await setFrenteUsuarios(id, usuarioIds, categoriaTab);
       cargar();
     } catch (err) {
       setError(err.message);
@@ -290,10 +294,18 @@ export function FrenteDetallePage() {
           </div>
         </form>
 
+        <div className={extra.tabs} role="tablist" aria-label="Categoría de solicitud">
+          {['INDIRECTA', 'DIRECTA'].map((cat) => (
+            <button key={cat} type="button" role="tab" aria-selected={categoriaTab === cat} className={`${extra.tab} ${categoriaTab === cat ? extra.tabActive : ''}`} onClick={() => setCategoriaTab(cat)}>
+              {cat === 'DIRECTA' ? 'Directa' : 'Indirecta'}
+            </button>
+          ))}
+        </div>
+
         <section className={styles.sectionCard}>
           <div>
-            <h2 className={styles.sectionTitle}>Personas asignadas al frente</h2>
-            <p className={styles.sectionHint}>Solo ellas podrán elegirse como aprobadores de abajo.</p>
+            <h2 className={styles.sectionTitle}>Personas asignadas al frente ({categoriaTab === 'DIRECTA' ? 'Directa' : 'Indirecta'})</h2>
+            <p className={styles.sectionHint}>Cada categoría tiene sus propias personas. Solo ellas podrán elegirse como aprobadores de abajo.</p>
           </div>
           <SelectorUsuarios label="Personas" usuarios={usuarios} seleccionados={usuarioIds} onChange={setUsuarioIds} />
           <div className={styles.actions}>
@@ -308,13 +320,6 @@ export function FrenteDetallePage() {
           <div>
             <h2 className={styles.sectionTitle}>Aprobadores del frente</h2>
             <p className={styles.sectionHint}>Cada paso lo puede ejecutar una persona específica, cualquiera con un rol marcado, o ambos. Las solicitudes Directas e Indirectas se configuran por separado.</p>
-          </div>
-          <div className={extra.tabs} role="tablist">
-            {['INDIRECTA', 'DIRECTA'].map((cat) => (
-              <button key={cat} type="button" role="tab" aria-selected={categoriaTab === cat} className={`${extra.tab} ${categoriaTab === cat ? extra.tabActive : ''}`} onClick={() => setCategoriaTab(cat)}>
-                {cat === 'DIRECTA' ? 'Directa' : 'Indirecta'}
-              </button>
-            ))}
           </div>
           <div className={extra.slots}>
             {slotsVisibles.map(({ campo, label, labelDirecta, codigo }, index) => {

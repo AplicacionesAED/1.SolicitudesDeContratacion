@@ -16,8 +16,8 @@ export function updateFrente(id, data) {
   return client.put(`/frentes/${id}`, data);
 }
 
-export function setFrenteUsuarios(id, usuarioIds) {
-  return client.put(`/frentes/${id}/usuarios`, { usuario_ids: usuarioIds });
+export function setFrenteUsuarios(id, usuarioIds, categoria) {
+  return client.put(`/frentes/${id}/usuarios`, { usuario_ids: usuarioIds, categoria });
 }
 
 export function getAprobadorFrente(frenteId, categoria) {

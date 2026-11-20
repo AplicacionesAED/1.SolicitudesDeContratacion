@@ -10,6 +10,8 @@ const FrenteUsuario = sequelize.define(
   {
     usuario_id: { type: DataTypes.INTEGER, primaryKey: true, allowNull: false },
     frente_id: { type: DataTypes.INTEGER, primaryKey: true, allowNull: false },
+    // Directa e Indirecta tienen su propia lista de personas por frente (2026-11-20).
+    categoria: { type: DataTypes.STRING(20), primaryKey: true, allowNull: false, defaultValue: 'INDIRECTA' },
   },
   { tableName: 'frente_usuarios', underscored: true, timestamps: false }
 );

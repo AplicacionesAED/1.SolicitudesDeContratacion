@@ -16,7 +16,6 @@ const Frente = sequelize.define(
 Frente.associate = (models) => {
   Frente.belongsTo(models.Proyecto, { foreignKey: 'proyecto_id', as: 'proyecto' });
   Frente.hasMany(models.FrenteUsuario, { foreignKey: 'frente_id', as: 'asignaciones' });
-  Frente.belongsToMany(models.Usuario, { through: models.FrenteUsuario, foreignKey: 'frente_id', otherKey: 'usuario_id', as: 'usuarios' });
   Frente.hasOne(models.AprobadorFrente, { foreignKey: 'frente_id', as: 'aprobadorConfig' });
 };
 

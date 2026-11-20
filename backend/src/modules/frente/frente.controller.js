@@ -6,6 +6,6 @@ const list = asyncHandler(async (req, res) => ok(res, await service.list({ proye
 const getById = asyncHandler(async (req, res) => ok(res, await service.getById(req.params.id)));
 const create = asyncHandler(async (req, res) => created(res, await service.create(req.body)));
 const update = asyncHandler(async (req, res) => ok(res, await service.update(req.params.id, req.body)));
-const setUsuarios = asyncHandler(async (req, res) => ok(res, await service.setUsuarios(req.params.id, req.body.usuario_ids)));
+const setUsuarios = asyncHandler(async (req, res) => ok(res, await service.setUsuarios(req.params.id, req.body.usuario_ids, req.body.categoria)));
 
 module.exports = { list, getById, create, update, setUsuarios };

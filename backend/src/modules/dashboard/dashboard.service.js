@@ -52,7 +52,7 @@ async function filtrarVisibles(solicitudes, usuario) {
   if (alcance === 'TODAS') return solicitudes;
   if (alcance === 'PROPIAS') return solicitudes.filter((s) => s.solicitante_id === userId);
 
-  const userFrenteIds = await usuarioTieneAlgunFrente(userId);
+  const frentesPorCategoria = { DIRECTA: await usuarioTieneAlgunFrente(userId, 'DIRECTA'), INDIRECTA: await usuarioTieneAlgunFrente(userId, 'INDIRECTA') };
   return solicitudes.filter(
     (s) =>
       s.solicitante_id === userId ||
@@ -61,7 +61,7 @@ async function filtrarVisibles(solicitudes, usuario) {
       s.responsable_contratos_minuta_id === userId ||
       s.coordinador_controles_id === userId ||
       s.director_controles_id === userId ||
-      (s.frentes_ids ?? []).some((id) => userFrenteIds.includes(id))
+      (s.frentes_ids ?? []).some((id) => (frentesPorCategoria[s.categoria] ?? []).includes(id))
   );
 }
 

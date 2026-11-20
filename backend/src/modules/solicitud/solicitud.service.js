@@ -147,8 +147,9 @@ function _enrichBase(s) {
   };
 }
 
-async function usuarioTieneAlgunFrente(usuarioId) {
-  const asignaciones = await FrenteUsuario.findAll({ where: { usuario_id: usuarioId }, attributes: ['frente_id'] });
+// `categoria` (2026-11-20): las personas de cada frente son independientes entre Directa e Indirecta; sin categoria, todas.
+async function usuarioTieneAlgunFrente(usuarioId, categoria) {
+  const asignaciones = await FrenteUsuario.findAll({ where: { usuario_id: usuarioId, ...(categoria ? { categoria } : {}) }, attributes: ['frente_id'] });
   return asignaciones.map((a) => a.frente_id);
 }
 
@@ -203,7 +204,7 @@ async function list(filtros, usuario) {
   if (alcance === 'PROPIAS') {
     solicitudes = solicitudes.filter((s) => s.solicitante_id === Number(userId));
   } else if (alcance === 'FRENTE') {
-    const userFrenteIds = await usuarioTieneAlgunFrente(userId);
+    const frentesPorCategoria = { DIRECTA: await usuarioTieneAlgunFrente(userId, 'DIRECTA'), INDIRECTA: await usuarioTieneAlgunFrente(userId, 'INDIRECTA') };
     solicitudes = solicitudes.filter((s) => {
       if (
         s.solicitante_id === Number(userId) ||
@@ -215,7 +216,7 @@ async function list(filtros, usuario) {
       ) {
         return true;
       }
-      return (s.frentes_ids ?? []).some((id) => userFrenteIds.includes(id));
+      return (s.frentes_ids ?? []).some((id) => (frentesPorCategoria[s.categoria] ?? []).includes(id));
     });
   }
   // alcance === 'TODAS' -- sin filtro adicional.
@@ -426,7 +427,7 @@ async function getById(id, usuario) {
   const puedeVerTodo = await puedeGestionarSolicitud(solicitud, usuario);
 
   if (!puedeVerTodo && solicitud.solicitante_id !== Number(userId)) {
-    const userFrenteIds = await usuarioTieneAlgunFrente(userId);
+    const userFrenteIds = await usuarioTieneAlgunFrente(userId, solicitud.categoria);
     const tieneAcceso = (solicitud.frentes_ids ?? []).some((fId) => userFrenteIds.includes(fId));
     if (!tieneAcceso) throw new ApiError(403, 'Sin acceso a esta solicitud');
   }
@@ -648,7 +649,7 @@ async function resolverResponsablesFrente(firstFrenteId, categoria, usuario) {
       if (rolesCalifican.some((r) => userRoles.includes(r))) {
         aprobadorId = usuario.id;
       } else {
-        const asignados = await FrenteUsuario.findAll({ where: { frente_id: firstFrenteId }, include: [{ model: Usuario, attributes: ['id', 'roles', 'activo'] }] });
+        const asignados = await FrenteUsuario.findAll({ where: { frente_id: firstFrenteId, categoria: 'INDIRECTA' }, include: [{ model: Usuario, attributes: ['id', 'roles', 'activo'] }] });
         const aprobadorUser = asignados.find((fu) => (fu.Usuario?.roles ?? []).some((r) => rolesCalifican.includes(r)) && fu.Usuario?.activo);
         aprobadorId = aprobadorUser?.Usuario?.id ?? null;
       }

@@ -114,7 +114,7 @@ const generarDocumento = asyncHandler(async (req, res) => {
   const rp = await getRolesPorCodigo();
   if (userRoles.includes(rp.SOLICITANTE) || userRoles.includes(rp.DIRECTOR_PROYECTO)) {
     if (solicitud.solicitante_id !== Number(req.usuario.id)) {
-      const asignaciones = await FrenteUsuario.findAll({ where: { usuario_id: req.usuario.id }, attributes: ['frente_id'] });
+      const asignaciones = await FrenteUsuario.findAll({ where: { usuario_id: req.usuario.id, categoria: solicitud.categoria }, attributes: ['frente_id'] });
       const userFrenteIds = asignaciones.map((a) => a.frente_id);
       const tieneAcceso = (solicitud.frentes_ids ?? []).some((fId) => userFrenteIds.includes(fId));
       if (!tieneAcceso) throw new ApiError(403, 'Sin acceso a esta solicitud');

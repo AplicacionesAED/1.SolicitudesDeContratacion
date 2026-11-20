@@ -10,6 +10,7 @@ const updateSchema = createSchema.partial();
 
 const usuariosSchema = z.object({
   usuario_ids: z.array(z.number().int()),
+  categoria: z.enum(['DIRECTA', 'INDIRECTA']),
 });
 
 module.exports = { createSchema, updateSchema, usuariosSchema };
