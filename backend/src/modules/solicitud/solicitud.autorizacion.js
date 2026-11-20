@@ -76,10 +76,10 @@ const ESTADOS_ORIGEN_SIN_ANULAR = {
   // PENDIENTE_GERENTE_COMPRAS en vez de EN_CONTROLES. INDIRECTA no tiene ese desvío, así que este estado/acción nunca
   // se alcanza ahí -- igual que PENDIENTE_RESIDENTE_ADMINISTRATIVO.
   APROBAR_GERENTE_COMPRAS: ['PENDIENTE_GERENTE_COMPRAS'],
-  // Concepto del revisor de Compras (2026-11-20): OK / No OK en el MISMO paso de la firma del Gerente de Compras. No es
-  // obligatorio ni cambia el estado (destino = el mismo estado, igual que COMENTAR): es una opinión que ve el Gerente.
+  // OK del revisor de Compras (2026-11-20) en el MISMO paso de la firma del Gerente de Compras. No es obligatorio ni cambia
+  // el estado (destino = el mismo estado, igual que COMENTAR): es un visto bueno que ve el Gerente. Si no está de acuerdo,
+  // el revisor devuelve (DEVOLVER) en vez de dar el OK.
   CONCEPTO_COMPRAS_OK: ['PENDIENTE_GERENTE_COMPRAS'],
-  CONCEPTO_COMPRAS_NO_OK: ['PENDIENTE_GERENTE_COMPRAS'],
   REENVIAR: ['DEVUELTA', 'EN_REVISION'],
 };
 
@@ -116,7 +116,6 @@ const ESTADO_DESTINO = {
   // Firma del Gerente de Compras (solo Directa): continúa hacia el Residente Administrativo — Adpro (EN_CONTROLES).
   APROBAR_GERENTE_COMPRAS: 'EN_CONTROLES',
   CONCEPTO_COMPRAS_OK: 'PENDIENTE_GERENTE_COMPRAS',
-  CONCEPTO_COMPRAS_NO_OK: 'PENDIENTE_GERENTE_COMPRAS',
   REENVIAR: 'ENVIADA',
   ANULAR: 'ANULADA',
 };
@@ -160,7 +159,6 @@ const ACCION_SLOT_FIJO = {
   // only), así que resolverSlot nunca necesita distinguir categoría acá.
   APROBAR_GERENTE_COMPRAS: 'gerente_compras',
   CONCEPTO_COMPRAS_OK: 'revisor_compras',
-  CONCEPTO_COMPRAS_NO_OK: 'revisor_compras',
   ANULAR: 'controles_adpro',
 };
 
@@ -196,6 +194,13 @@ const SLOT_POR_ESTADO_ORIGEN = {
   EN_TRAMITE_CONTRATOS: 'contratos_tramite',
   // Directa (2026-11-05): "Compras y Contrataciones" -- el Gerente de Compras puede devolver desde su propio paso.
   PENDIENTE_GERENTE_COMPRAS: 'gerente_compras',
+};
+
+// Slots ADICIONALES que también pueden devolver desde un estado, además del de SLOT_POR_ESTADO_ORIGEN: el revisor de
+// Compras (2026-11-20) puede devolver desde "Compras y Contrataciones", igual que el Gerente de Compras. El destino no
+// cambia: en Directa vuelve a PENDIENTE_RESIDENTE_ADMINISTRATIVO (ver ESTADO_DESTINO_DEVOLVER_DIRECTA).
+const SLOTS_EXTRA_DEVOLVER = {
+  PENDIENTE_GERENTE_COMPRAS: ['revisor_compras'],
 };
 
 // DEVOLVER en Directa volviendo al paso 3, no al paso 1 (2026-09-22): si la
@@ -302,11 +307,14 @@ async function puedeEjecutarAccion(solicitud, usuario, accion, funcionalidadesPo
   const slot = resolverSlot(accion, solicitud.estado, solicitud.categoria);
   if (!slot) return false;
 
-  const snapshotCampo = SNAPSHOT_POR_SLOT[slot];
-  if (snapshotCampo && solicitud[snapshotCampo] && Number(solicitud[snapshotCampo]) === Number(usuario.id)) return true;
-
+  const slots = [slot, ...(accion === 'DEVOLVER' ? SLOTS_EXTRA_DEVOLVER[solicitud.estado] ?? [] : [])];
   const frenteIds = solicitud.frentes_ids ?? [];
-  return usuarioAutorizadoParaSlot(frenteIds, usuario, slot, solicitud.categoria);
+  for (const s of slots) {
+    const snapshotCampo = SNAPSHOT_POR_SLOT[s];
+    if (snapshotCampo && solicitud[snapshotCampo] && Number(solicitud[snapshotCampo]) === Number(usuario.id)) return true;
+    if (await usuarioAutorizadoParaSlot(frenteIds, usuario, s, solicitud.categoria)) return true;
+  }
+  return false;
 }
 
 // Lista de acciones que ESTE usuario puede ejecutar AHORA sobre ESTA

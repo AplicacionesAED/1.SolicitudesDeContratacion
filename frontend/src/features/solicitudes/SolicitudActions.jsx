@@ -97,8 +97,8 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
   // Compras y Contrataciones (Directa, 2026-11-05): el Gerente de Compras tambien puede devolver; reutiliza el mismo
   // modal que el Residente Administrativo (la solicitud vuelve a PENDIENTE_RESIDENTE_ADMINISTRATIVO).
   const canDevolverGerenteCompras = estado === 'PENDIENTE_GERENTE_COMPRAS' && puede('DEVOLVER');
-  // Concepto OK / No OK del revisor de Compras (2026-11-20): en el mismo paso, solo informativo; puede cambiarlo hasta la firma.
-  const canConceptoCompras = estado === 'PENDIENTE_GERENTE_COMPRAS' && puede('CONCEPTO_COMPRAS_OK') && puede('CONCEPTO_COMPRAS_NO_OK');
+  // OK del revisor de Compras (2026-11-20): en el mismo paso, solo informativo. Si no está de acuerdo devuelve (botón Devolver).
+  const canConceptoCompras = estado === 'PENDIENTE_GERENTE_COMPRAS' && puede('CONCEPTO_COMPRAS_OK');
   const canReenviar = (estado === 'DEVUELTA' || estado === 'EN_REVISION') && puede('REENVIAR');
   // 2026-09-21: el backend expone `solicitud.puedeEditar` (misma lógica que
   // `accionesDisponibles` -- una sola fuente de verdad: el backend calcula,
@@ -185,10 +185,6 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
     if (modalType === 'aprobar_final') return ejecutar('APROBAR_FINAL');
     if (modalType === 'aprobar_gerente_compras') return ejecutar('APROBAR_GERENTE_COMPRAS');
     if (modalType === 'concepto_ok') return ejecutar('CONCEPTO_COMPRAS_OK', nota.trim() ? { nota } : {});
-    if (modalType === 'concepto_no_ok') {
-      if (!nota.trim()) return setError('Cuando el concepto es No OK debes dejar una nota con el motivo');
-      return ejecutar('CONCEPTO_COMPRAS_NO_OK', { nota });
-    }
     if (modalType === 'reenviar') return ejecutar('REENVIAR');
     if (modalType === 'anular') {
       if (!nota.trim()) return setError('El motivo es obligatorio para anular la solicitud');
@@ -234,8 +230,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
     adpro: 'Registrar Número Adpro',
     aprobar_final: 'Aprobación definitiva',
     aprobar_gerente_compras: 'Firmar — Compras y Contrataciones',
-    concepto_ok: 'Concepto de Compras: OK',
-    concepto_no_ok: 'Concepto de Compras: No OK',
+    concepto_ok: 'OK de Compras',
     reenviar: 'Reenviar solicitud',
     anular: 'Anular solicitud',
     eliminar: 'Eliminar solicitud',
@@ -291,8 +286,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
           {canAprobarFinal && <Button onClick={() => abrirModal('aprobar_final')}>Aprobar Definitivamente</Button>}
           {canAprobarGerenteCompras && <Button onClick={() => abrirModal('aprobar_gerente_compras')}>Firmar</Button>}
           {canDevolverGerenteCompras && <Button variant="danger" onClick={() => abrirModal('devolver_residente_administrativo')}>Devolver</Button>}
-          {canConceptoCompras && <Button variant="secondary" onClick={() => abrirModal('concepto_ok')}>Concepto: OK</Button>}
-          {canConceptoCompras && <Button variant="secondary" onClick={() => abrirModal('concepto_no_ok')}>Concepto: No OK</Button>}
+          {canConceptoCompras && <Button variant="secondary" onClick={() => abrirModal('concepto_ok')}>Dar OK</Button>}
           {canReenviar && <Button onClick={() => abrirModal('reenviar')}>Reenviar</Button>}
           {canEdit && <Button variant="secondary" onClick={() => navigate(`/solicitudes/${solicitud.id}/editar`)}>Editar solicitud</Button>}
           {canAnular && <Button variant="danger" onClick={() => abrirModal('anular')}>Anular solicitud</Button>}
@@ -307,7 +301,7 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
         footer={
           <>
             <Button type="button" variant="secondary" onClick={cerrarModal} disabled={loading}>Cancelar</Button>
-            <Button type="button" variant={['devolver', 'devolver_tecnico', 'devolver_proyeccion', 'devolver_residente_administrativo', 'concepto_no_ok', 'anular', 'eliminar'].includes(modalType) ? 'danger' : 'primary'} onClick={confirmarModal} disabled={loading}>
+            <Button type="button" variant={['devolver', 'devolver_tecnico', 'devolver_proyeccion', 'devolver_residente_administrativo', 'anular', 'eliminar'].includes(modalType) ? 'danger' : 'primary'} onClick={confirmarModal} disabled={loading}>
               {loading ? 'Procesando…' : 'Confirmar'}
             </Button>
           </>
@@ -380,17 +374,9 @@ export function SolicitudActions({ solicitud, usuario, onChange }) {
         {modalType === 'aprobar_gerente_compras' && <p>¿Confirmas la firma de Compras y Contrataciones? La solicitud pasará al Residente Administrativo para registrar el N° Adpro.</p>}
         {modalType === 'concepto_ok' && (
           <>
-            <p>Tu concepto es una opinión para el Gerente de Compras: no cambia el estado ni bloquea su firma. Puedes cambiarlo mientras él no haya firmado.</p>
+            <p>Tu OK es un visto bueno para el Gerente de Compras: no cambia el estado ni bloquea su firma. Si no estás de acuerdo, usa Devolver.</p>
             <Field label="Nota (opcional)">
               {(p) => <Textarea {...p} rows={3} value={nota} onChange={(e) => setNota(e.target.value)} />}
-            </Field>
-          </>
-        )}
-        {modalType === 'concepto_no_ok' && (
-          <>
-            <p>Tu concepto es una opinión para el Gerente de Compras: no cambia el estado ni bloquea su firma. Puedes cambiarlo mientras él no haya firmado.</p>
-            <Field label="Motivo" required>
-              {(p) => <Textarea {...p} rows={4} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Explica por qué no das el OK..." />}
             </Field>
           </>
         )}

@@ -187,12 +187,6 @@ const cambiarEstado = asyncHandler(async (req, res) => {
   if (accion === 'DEVOLVER' || accion === 'REVISAR') {
     if (!nota || nota.trim() === '') throw new ApiError(400, 'Se requiere una nota para esta acción');
   }
-
-  // Concepto del revisor de Compras: el "No OK" exige explicar por qué (el OK puede ir sin nota).
-  if (accion === 'CONCEPTO_COMPRAS_NO_OK' && (!nota || nota.trim() === '')) {
-    throw new ApiError(400, 'Cuando el concepto es No OK debes dejar una nota con el motivo');
-  }
-
   // Devolver (Directa e Indirecta, cualquier estado de origen) exige un motivo
   // de al menos 30 caracteres para que el solicitante sepa qué corregir.
   if (accion === 'DEVOLVER' && nota.trim().length < MIN_NOTA_DEVOLVER) {
@@ -278,9 +272,9 @@ const cambiarEstado = asyncHandler(async (req, res) => {
   if (accion === 'APROBAR_RESIDENTE_ADMINISTRATIVO') updateData.fecha_aprobacion_residente_administrativo = new Date();
   // Firma del Gerente de Compras (Directa) -- mismo patrón de estampa automática que los demás `fecha_aprobacion_*`.
   if (accion === 'APROBAR_GERENTE_COMPRAS') updateData.fecha_aprobacion_gerente_compras = new Date();
-  // Concepto del revisor de Compras: el último que se da prevalece (cada cambio queda en el historial). Solo informativo.
-  if (accion === 'CONCEPTO_COMPRAS_OK' || accion === 'CONCEPTO_COMPRAS_NO_OK') {
-    updateData.concepto_compras = accion === 'CONCEPTO_COMPRAS_OK' ? 'OK' : 'NO_OK';
+  // OK del revisor de Compras: solo informativo, queda en el historial. Se limpia al (re)entrar al paso.
+  if (accion === 'CONCEPTO_COMPRAS_OK') {
+    updateData.concepto_compras = 'OK';
     updateData.nota_concepto_compras = nota?.trim() || null;
     updateData.fecha_concepto_compras = new Date();
     updateData.concepto_compras_por = req.usuario.nombre ?? null;

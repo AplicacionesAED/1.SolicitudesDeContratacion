@@ -4,7 +4,7 @@
 // visual que reemplazar", que era falso: el original SÍ tenía este stepper
 // horizontal con iconos, fechas y responsable por paso. Gap real reportado
 // por el usuario, corregido acá restaurando el componente real.
-import { Send, CheckCircle, FileText, PenLine, ClipboardCheck, ThumbsUp, Star, RotateCcw, Eye, UserCheck, Minus, History, Check, X } from 'lucide-react';
+import { Send, CheckCircle, FileText, PenLine, ClipboardCheck, ThumbsUp, Star, RotateCcw, Eye, UserCheck, Minus, History, Check } from 'lucide-react';
 import { ESTADO_LABELS } from '../../utils/solicitudes.js';
 import styles from './Solicitudes.module.css';
 
@@ -67,8 +67,8 @@ const WORKFLOW_STEPS_DIRECTA = [
 
 const SIDE_STATES = ['DEVUELTA', 'EN_REVISION', 'BORRADOR'];
 
-// `concepto`: { valor: 'OK' | 'NO_OK' | null, por, nota } -- el concepto del revisor de Compras (solo informativo). Se marca sobre el
-// círculo del paso "Compras y Contrataciones" con un check o una X.
+// `concepto`: { valor: 'OK' | null, por, nota } -- el OK del revisor de Compras (solo informativo). Se marca sobre el círculo del
+// paso "Compras y Contrataciones" con un check.
 export function EstadoTimeline({ estadoActual, historial = [], importadoHistorico = false, numeroOtrosi, categoria, concepto = null }) {
   if (importadoHistorico) {
     return (
@@ -178,23 +178,22 @@ export function EstadoTimeline({ estadoActual, historial = [], importadoHistoric
             const date = histEntry ? formatDate(histEntry.fecha) : null;
             const userName = histEntry?.usuario?.nombre ?? null;
             const mostrarConcepto = Boolean(step.concepto && concepto?.valor);
-            const conceptoNoOk = concepto?.valor === 'NO_OK';
-            const conceptoTexto = mostrarConcepto ? `${concepto.por ? `${concepto.por}: ` : ''}${conceptoNoOk ? 'No OK' : 'OK'}${concepto.nota ? ` — ${concepto.nota}` : ''}` : '';
+            const conceptoTexto = mostrarConcepto ? `${concepto.por ? `${concepto.por}: ` : ''}OK${concepto.nota ? ` — ${concepto.nota}` : ''}` : '';
 
             return (
               <li key={step.label} className={styles.stepperItem}>
                 <div className={`${styles.stepperCircle} ${circleClass}`} aria-current={isCurrent ? 'step' : undefined}>
                   {isSkipped ? <Minus size={14} strokeWidth={1.75} aria-hidden="true" /> : <Icon size={16} strokeWidth={1.75} aria-hidden="true" />}
                   {mostrarConcepto && (
-                    <span className={`${styles.stepperConceptoMarca} ${conceptoNoOk ? styles.stepperConceptoNoOk : styles.stepperConceptoOk}`} role="img" aria-label={`Concepto de Compras: ${conceptoNoOk ? 'No OK' : 'OK'}`} title={conceptoTexto}>
-                      {conceptoNoOk ? <X size={11} strokeWidth={3} aria-hidden="true" /> : <Check size={11} strokeWidth={3} aria-hidden="true" />}
+                    <span className={`${styles.stepperConceptoMarca} ${styles.stepperConceptoOk}`} role="img" aria-label="OK de Compras" title={conceptoTexto}>
+                      <Check size={11} strokeWidth={3} aria-hidden="true" />
                     </span>
                   )}
                 </div>
                 <span className={`${styles.stepperLabel} ${labelClass}`}>{step.label}</span>
                 {date && <span className={styles.stepperDate}>{date}</span>}
                 {userName && <span className={styles.stepperUser}>{userName}</span>}
-                {mostrarConcepto && <span className={`${styles.stepperConcepto} ${conceptoNoOk ? styles.stepperConceptoTextoNoOk : styles.stepperConceptoTextoOk}`}>Revisión: {conceptoNoOk ? 'No OK' : 'OK'}</span>}
+                {mostrarConcepto && <span className={`${styles.stepperConcepto} ${styles.stepperConceptoTextoOk}`}>Revisión: OK</span>}
               </li>
             );
           })}

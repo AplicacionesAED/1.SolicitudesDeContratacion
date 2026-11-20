@@ -82,8 +82,8 @@ const SLOTS = [
   // Paso nuevo AL FINAL del flujo Directa, 2026-10-09 -- aprueba después de
   // Director/a de Controles, antes de Completada.
   { campo: 'gerente_compras', label: 'Gerente de Compras (firma Compras y Contrataciones, antes de Residente Administrativo — Adpro)', codigo: 'GERENTE_COMPRAS', soloDirecta: true },
-  // Revisor de Compras (2026-11-20): da su concepto OK / No OK en el mismo paso; es solo una opinión, no bloquea ni devuelve.
-  { campo: 'revisor_compras', label: 'Revisor de Compras (da su concepto OK / No OK en Compras y Contrataciones; no bloquea)', codigo: 'REVISOR_COMPRAS', soloDirecta: true },
+  // Revisor de Compras (2026-11-20): da su OK en el mismo paso (visto bueno, no bloquea la firma) o devuelve la solicitud.
+  { campo: 'revisor_compras', label: 'Revisor de Compras (da su OK o devuelve en Compras y Contrataciones)', codigo: 'REVISOR_COMPRAS', soloDirecta: true },
 ];
 
 // Puerto de "asignar usuarios a un registro" con CheckboxListSelect en vez

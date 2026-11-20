@@ -241,7 +241,7 @@
   background: color-mix(in srgb, var(--color-primary) 3%, white);
 }
 
-/* Concepto del revisor de Compras (OK / No OK) visible para quien firma Compras y Contrataciones. */
+/* OK del revisor de Compras, visible para quien firma Compras y Contrataciones. */
 .concepto {
   display: flex;
   align-items: flex-start;
@@ -253,11 +253,6 @@
 .conceptoOk {
   background: var(--color-success-surface);
   color: var(--color-success-ink);
-}
-
-.conceptoNoOk {
-  background: var(--color-danger-surface);
-  color: var(--color-danger-ink);
 }
 
 .conceptoCuerpo {
