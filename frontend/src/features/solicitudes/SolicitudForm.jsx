@@ -590,8 +590,9 @@ export function SolicitudForm({ tipoSolicitud, categoria, isEdit = false, initia
   const [intentoAvanzar, setIntentoAvanzar] = useState(null);
   // TEMPORAL (pruebas, 2026-11-10): BLOQUEAR_AVANCE_PASOS = false permite avanzar sin completar el paso. Volver a true para reactivarlo.
   const BLOQUEAR_AVANCE_PASOS = false;
+  // admin@aed.com.co queda exento siempre: puede saltar de paso sin completar (el envio sigue validando).
   const pasoBloqueante = (destinoKey) => {
-    if (!BLOQUEAR_AVANCE_PASOS) return undefined;
+    if (!BLOQUEAR_AVANCE_PASOS || usuario?.email?.toLowerCase() === 'admin@aed.com.co') return undefined;
     const destinoIdx = pasos.findIndex((p) => p.key === destinoKey);
     return destinoIdx > pasoIdx ? pasos.slice(pasoIdx, destinoIdx).find((p) => pendientesPorPaso[p.key].length > 0) : undefined;
   };
