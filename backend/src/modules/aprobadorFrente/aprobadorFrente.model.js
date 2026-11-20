@@ -53,6 +53,9 @@ const AprobadorFrente = sequelize.define(
     // controles_proyeccion/residente_administrativo (100% nuevo, sin
     // comportamiento previo que preservar).
     gerente_compras: { type: DataTypes.JSONB, allowNull: false, defaultValue: SLOT_VACIO },
+    // Revisor de "Compras y Contrataciones" (2026-11-20): da un concepto OK / No OK visible para el Gerente de Compras,
+    // sin bloquear ni mover la solicitud.
+    revisor_compras: { type: DataTypes.JSONB, allowNull: false, defaultValue: SLOT_VACIO },
   },
   {
     tableName: 'aprobador_frentes',

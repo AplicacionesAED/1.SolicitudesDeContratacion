@@ -4,7 +4,7 @@
 // visual que reemplazar", que era falso: el original SÍ tenía este stepper
 // horizontal con iconos, fechas y responsable por paso. Gap real reportado
 // por el usuario, corregido acá restaurando el componente real.
-import { Send, CheckCircle, FileText, PenLine, ClipboardCheck, ThumbsUp, Star, RotateCcw, Eye, UserCheck, Minus, History } from 'lucide-react';
+import { Send, CheckCircle, FileText, PenLine, ClipboardCheck, ThumbsUp, Star, RotateCcw, Eye, UserCheck, Minus, History, Check, X } from 'lucide-react';
 import { ESTADO_LABELS } from '../../utils/solicitudes.js';
 import styles from './Solicitudes.module.css';
 
@@ -59,7 +59,7 @@ const WORKFLOW_STEPS_DIRECTA = [
   { label: 'Director de Obra', icon: CheckCircle, completionAction: 'APROBAR_DIRECTOR', activeStates: ['ENVIADA'], resettable: true },
   { label: 'Residente Administrativo — Revisión', icon: UserCheck, completionAction: 'APROBAR_RESIDENTE_ADMINISTRATIVO', activeStates: ['PENDIENTE_RESIDENTE_ADMINISTRATIVO'], resettable: true },
   { label: 'Controles — Proyección', icon: ClipboardCheck, completionAction: 'APROBAR_PROYECCION', activeStates: ['EN_PROYECCION_CONTROLES'], resettable: true },
-  { label: 'Compras y Contrataciones', icon: FileText, completionAction: 'APROBAR_GERENTE_COMPRAS', activeStates: ['PENDIENTE_GERENTE_COMPRAS'], resettable: true },
+  { label: 'Compras y Contrataciones', icon: FileText, completionAction: 'APROBAR_GERENTE_COMPRAS', activeStates: ['PENDIENTE_GERENTE_COMPRAS'], resettable: true, concepto: true },
   { label: 'Residente Administrativo — Adpro', icon: UserCheck, completionAction: 'REGISTRAR_ADPRO', activeStates: ['EN_CONTROLES'], resettable: true },
   { label: 'Aprobación Director/a de Controles', icon: ThumbsUp, completionAction: 'APROBAR_FINAL', activeStates: ['APROBACION_FINAL'], resettable: true },
   { label: 'Completada', icon: Star, completionAction: null, activeStates: ['COMPLETADA'] },
@@ -67,7 +67,9 @@ const WORKFLOW_STEPS_DIRECTA = [
 
 const SIDE_STATES = ['DEVUELTA', 'EN_REVISION', 'BORRADOR'];
 
-export function EstadoTimeline({ estadoActual, historial = [], importadoHistorico = false, numeroOtrosi, categoria }) {
+// `concepto`: { valor: 'OK' | 'NO_OK' | null, por, nota } -- el concepto del revisor de Compras (solo informativo). Se marca sobre el
+// círculo del paso "Compras y Contrataciones" con un check o una X.
+export function EstadoTimeline({ estadoActual, historial = [], importadoHistorico = false, numeroOtrosi, categoria, concepto = null }) {
   if (importadoHistorico) {
     return (
       <div className={styles.stepperCard}>
@@ -175,15 +177,24 @@ export function EstadoTimeline({ estadoActual, historial = [], importadoHistoric
 
             const date = histEntry ? formatDate(histEntry.fecha) : null;
             const userName = histEntry?.usuario?.nombre ?? null;
+            const mostrarConcepto = Boolean(step.concepto && concepto?.valor);
+            const conceptoNoOk = concepto?.valor === 'NO_OK';
+            const conceptoTexto = mostrarConcepto ? `${concepto.por ? `${concepto.por}: ` : ''}${conceptoNoOk ? 'No OK' : 'OK'}${concepto.nota ? ` — ${concepto.nota}` : ''}` : '';
 
             return (
               <li key={step.label} className={styles.stepperItem}>
                 <div className={`${styles.stepperCircle} ${circleClass}`} aria-current={isCurrent ? 'step' : undefined}>
                   {isSkipped ? <Minus size={14} strokeWidth={1.75} aria-hidden="true" /> : <Icon size={16} strokeWidth={1.75} aria-hidden="true" />}
+                  {mostrarConcepto && (
+                    <span className={`${styles.stepperConceptoMarca} ${conceptoNoOk ? styles.stepperConceptoNoOk : styles.stepperConceptoOk}`} role="img" aria-label={`Concepto de Compras: ${conceptoNoOk ? 'No OK' : 'OK'}`} title={conceptoTexto}>
+                      {conceptoNoOk ? <X size={11} strokeWidth={3} aria-hidden="true" /> : <Check size={11} strokeWidth={3} aria-hidden="true" />}
+                    </span>
+                  )}
                 </div>
                 <span className={`${styles.stepperLabel} ${labelClass}`}>{step.label}</span>
                 {date && <span className={styles.stepperDate}>{date}</span>}
                 {userName && <span className={styles.stepperUser}>{userName}</span>}
+                {mostrarConcepto && <span className={`${styles.stepperConcepto} ${conceptoNoOk ? styles.stepperConceptoTextoNoOk : styles.stepperConceptoTextoOk}`}>Revisión: {conceptoNoOk ? 'No OK' : 'OK'}</span>}
               </li>
             );
           })}

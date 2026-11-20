@@ -8,7 +8,7 @@
 // usuario reportó como faltante.
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Paperclip, Link2, ExternalLink, GitMerge, Clock, CheckCircle2, UserRound, Ban } from 'lucide-react';
+import { Paperclip, Link2, ExternalLink, GitMerge, Clock, CheckCircle2, XCircle, UserRound, Ban } from 'lucide-react';
 import { getSolicitud, descargarDocumento, descargarOrdenServicio, descargarCronogramaExport } from '../../api/solicitudes.js';
 import { API_BASE_URL } from '../../api/client.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -234,10 +234,21 @@ export function SolicitudDetallePage() {
           </div>
         )}
 
+        {solicitud.conceptoCompras && (
+          <div className={`${d.concepto} ${solicitud.conceptoCompras === 'NO_OK' ? d.conceptoNoOk : d.conceptoOk}`}>
+            {solicitud.conceptoCompras === 'NO_OK' ? <XCircle size={20} aria-hidden="true" /> : <CheckCircle2 size={20} aria-hidden="true" />}
+            <div className={d.conceptoCuerpo}>
+              <p className={d.conceptoTitulo}>Concepto de Compras: {solicitud.conceptoCompras === 'NO_OK' ? 'No OK' : 'OK'}</p>
+              {solicitud.notaConceptoCompras && <p className={d.conceptoNota}>{solicitud.notaConceptoCompras}</p>}
+              <p className={d.conceptoMeta}>{[solicitud.conceptoComprasPor, solicitud.fechaConceptoCompras && new Date(solicitud.fechaConceptoCompras).toLocaleDateString('es-CO')].filter(Boolean).join(' · ')} · Es una opinión: la decisión de firmar o devolver es del Gerente de Compras.</p>
+            </div>
+          </div>
+        )}
+
         <SolicitudActions solicitud={solicitud} usuario={usuario} onChange={cargar} />
       </section>
 
-      <EstadoTimeline estadoActual={solicitud.estado} historial={solicitud.historial} importadoHistorico={solicitud.importadoHistorico} numeroOtrosi={solicitud.numeroOtrosi} categoria={solicitud.categoria} />
+      <EstadoTimeline estadoActual={solicitud.estado} historial={solicitud.historial} importadoHistorico={solicitud.importadoHistorico} numeroOtrosi={solicitud.numeroOtrosi} categoria={solicitud.categoria} concepto={{ valor: solicitud.conceptoCompras, por: solicitud.conceptoComprasPor, nota: solicitud.notaConceptoCompras }} />
 
       <div className={d.tabs} role="tablist" aria-label="Secciones de la solicitud">
         {SECCIONES.map((x) => (

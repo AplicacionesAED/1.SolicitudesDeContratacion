@@ -111,6 +111,13 @@ async function notificarPendienteGerenteCompras(solicitudId, consecutivo, gerent
   await crearNotificacion(gerenteComprasUserId, 'Solicitud pendiente de tu firma', `La solicitud ${consecutivo} está en Compras y Contrataciones; debes revisarla y firmarla como Gerente de Compras.`, `/solicitudes/${solicitudId}`);
 }
 
+// Revisor de Compras (2026-11-20): se le avisa cuando la solicitud entra a Compras y Contrataciones para que dé su
+// concepto OK / No OK, que el Gerente de Compras verá al firmar. Guard interno si el frente no tiene revisor asignado.
+async function notificarRevisionCompras(solicitudId, consecutivo, revisorUserId) {
+  if (!revisorUserId) return;
+  await crearNotificacion(revisorUserId, 'Solicitud para tu concepto', `La solicitud ${consecutivo} está en Compras y Contrataciones; puedes dar tu concepto (OK / No OK) antes de la firma del Gerente de Compras.`, `/solicitudes/${solicitudId}`);
+}
+
 async function notificarCompletada(solicitudId, consecutivo, involucrados) {
   await Promise.all(
     involucrados.filter(Boolean).map((usuarioId) =>
@@ -167,6 +174,7 @@ module.exports = {
   notificarControles,
   notificarAdproRegistrado,
   notificarPendienteGerenteCompras,
+  notificarRevisionCompras,
   notificarCompletada,
   notificarComentario,
   listar,

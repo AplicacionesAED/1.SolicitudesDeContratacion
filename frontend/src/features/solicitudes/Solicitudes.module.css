@@ -972,3 +972,41 @@ select.celdaInput.celdaSelect:not([size]) {
   vertical-align: top;
   overflow-wrap: anywhere;
 }
+
+/* Concepto del revisor de Compras sobre el paso "Compras y Contrataciones": marca en la esquina inferior del círculo
+   (check verde = OK, X roja = No OK). Es solo informativo, no cambia el estado del paso. */
+.stepperConceptoMarca {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  color: var(--color-primary-ink-on);
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+.stepperConceptoOk {
+  background: var(--color-success-ink);
+}
+
+.stepperConceptoNoOk {
+  background: var(--color-danger-ink);
+}
+
+.stepperConcepto {
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.stepperConceptoTextoOk {
+  color: var(--color-success-ink);
+}
+
+.stepperConceptoTextoNoOk {
+  color: var(--color-danger-ink);
+}

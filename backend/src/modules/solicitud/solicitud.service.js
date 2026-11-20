@@ -127,6 +127,11 @@ function _enrichBase(s) {
     responsableControlesAprobacionFinalId: d.responsable_controles_aprobacion_final_id,
     responsableDirectorObraId: d.responsable_director_obra_id,
     responsableGerenteComprasId: d.responsable_gerente_compras_id,
+    responsableRevisorComprasId: d.responsable_revisor_compras_id,
+    conceptoCompras: d.concepto_compras,
+    notaConceptoCompras: d.nota_concepto_compras,
+    fechaConceptoCompras: d.fecha_concepto_compras,
+    conceptoComprasPor: d.concepto_compras_por,
     notaContratacion: d.nota_contratacion,
     necesitaRevision: d.necesita_revision,
     numeroContratoAdpro: d.numero_contrato_adpro,
@@ -667,6 +672,7 @@ async function resolverResponsablesFrente(firstFrenteId, categoria, usuario) {
     responsable_controles_aprobacion_final_id: config?.controles_aprobacion_final?.usuarios?.[0] ?? null,
     responsable_director_obra_id: config?.director_obra?.usuarios?.[0] ?? null,
     responsable_gerente_compras_id: config?.gerente_compras?.usuarios?.[0] ?? null,
+    responsable_revisor_compras_id: config?.revisor_compras?.usuarios?.[0] ?? null,
   };
 }
 

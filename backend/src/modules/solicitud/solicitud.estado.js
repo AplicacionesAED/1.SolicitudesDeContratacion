@@ -188,6 +188,11 @@ const cambiarEstado = asyncHandler(async (req, res) => {
     if (!nota || nota.trim() === '') throw new ApiError(400, 'Se requiere una nota para esta acción');
   }
 
+  // Concepto del revisor de Compras: el "No OK" exige explicar por qué (el OK puede ir sin nota).
+  if (accion === 'CONCEPTO_COMPRAS_NO_OK' && (!nota || nota.trim() === '')) {
+    throw new ApiError(400, 'Cuando el concepto es No OK debes dejar una nota con el motivo');
+  }
+
   // Devolver (Directa e Indirecta, cualquier estado de origen) exige un motivo
   // de al menos 30 caracteres para que el solicitante sepa qué corregir.
   if (accion === 'DEVOLVER' && nota.trim().length < MIN_NOTA_DEVOLVER) {
@@ -259,6 +264,7 @@ const cambiarEstado = asyncHandler(async (req, res) => {
     }
   }
 
+  const estadoOrigen = solicitud.estado;
   const updateData = { estado: estadoDestino };
   if (accion === 'APROBAR_DIRECTOR') updateData.fecha_aprobacion_director = new Date();
   // Flujo propio de Directa -- "Controles realiza proyección, debe dar su
@@ -272,6 +278,20 @@ const cambiarEstado = asyncHandler(async (req, res) => {
   if (accion === 'APROBAR_RESIDENTE_ADMINISTRATIVO') updateData.fecha_aprobacion_residente_administrativo = new Date();
   // Firma del Gerente de Compras (Directa) -- mismo patrón de estampa automática que los demás `fecha_aprobacion_*`.
   if (accion === 'APROBAR_GERENTE_COMPRAS') updateData.fecha_aprobacion_gerente_compras = new Date();
+  // Concepto del revisor de Compras: el último que se da prevalece (cada cambio queda en el historial). Solo informativo.
+  if (accion === 'CONCEPTO_COMPRAS_OK' || accion === 'CONCEPTO_COMPRAS_NO_OK') {
+    updateData.concepto_compras = accion === 'CONCEPTO_COMPRAS_OK' ? 'OK' : 'NO_OK';
+    updateData.nota_concepto_compras = nota?.trim() || null;
+    updateData.fecha_concepto_compras = new Date();
+    updateData.concepto_compras_por = req.usuario.nombre ?? null;
+  }
+  // Al (re)entrar a Compras y Contrataciones el concepto anterior deja de valer.
+  if (estadoDestino === 'PENDIENTE_GERENTE_COMPRAS' && estadoOrigen !== 'PENDIENTE_GERENTE_COMPRAS') {
+    updateData.concepto_compras = null;
+    updateData.nota_concepto_compras = null;
+    updateData.fecha_concepto_compras = null;
+    updateData.concepto_compras_por = null;
+  }
   if (accion === 'REVISAR') {
     updateData.necesita_revision = true;
     updateData.nota_contratacion = nota;
@@ -384,6 +404,11 @@ const cambiarEstado = asyncHandler(async (req, res) => {
       } else if (solicitud.coordinador_controles_id) {
         await notificacionService.notificarControles(numId, solicitud.consecutivo, solicitud.coordinador_controles_id);
       }
+    }
+
+    // Al entrar a Compras y Contrataciones también se avisa al revisor para que dé su concepto (opcional).
+    if (estadoDestino === 'PENDIENTE_GERENTE_COMPRAS' && estadoOrigen !== 'PENDIENTE_GERENTE_COMPRAS') {
+      await notificacionService.notificarRevisionCompras(numId, solicitud.consecutivo, solicitud.responsable_revisor_compras_id);
     }
 
     if (accion === 'REGISTRAR_ADPRO' && solicitud.director_controles_id) {

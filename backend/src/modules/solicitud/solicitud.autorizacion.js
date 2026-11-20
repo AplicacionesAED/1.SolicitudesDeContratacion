@@ -76,6 +76,10 @@ const ESTADOS_ORIGEN_SIN_ANULAR = {
   // PENDIENTE_GERENTE_COMPRAS en vez de EN_CONTROLES. INDIRECTA no tiene ese desvío, así que este estado/acción nunca
   // se alcanza ahí -- igual que PENDIENTE_RESIDENTE_ADMINISTRATIVO.
   APROBAR_GERENTE_COMPRAS: ['PENDIENTE_GERENTE_COMPRAS'],
+  // Concepto del revisor de Compras (2026-11-20): OK / No OK en el MISMO paso de la firma del Gerente de Compras. No es
+  // obligatorio ni cambia el estado (destino = el mismo estado, igual que COMENTAR): es una opinión que ve el Gerente.
+  CONCEPTO_COMPRAS_OK: ['PENDIENTE_GERENTE_COMPRAS'],
+  CONCEPTO_COMPRAS_NO_OK: ['PENDIENTE_GERENTE_COMPRAS'],
   REENVIAR: ['DEVUELTA', 'EN_REVISION'],
 };
 
@@ -111,6 +115,8 @@ const ESTADO_DESTINO = {
   APROBAR_FINAL: 'COMPLETADA',
   // Firma del Gerente de Compras (solo Directa): continúa hacia el Residente Administrativo — Adpro (EN_CONTROLES).
   APROBAR_GERENTE_COMPRAS: 'EN_CONTROLES',
+  CONCEPTO_COMPRAS_OK: 'PENDIENTE_GERENTE_COMPRAS',
+  CONCEPTO_COMPRAS_NO_OK: 'PENDIENTE_GERENTE_COMPRAS',
   REENVIAR: 'ENVIADA',
   ANULAR: 'ANULADA',
 };
@@ -153,6 +159,8 @@ const ACCION_SLOT_FIJO = {
   // DIRECTA (el desvío que lleva a PENDIENTE_GERENTE_COMPRAS es DIRECTA-
   // only), así que resolverSlot nunca necesita distinguir categoría acá.
   APROBAR_GERENTE_COMPRAS: 'gerente_compras',
+  CONCEPTO_COMPRAS_OK: 'revisor_compras',
+  CONCEPTO_COMPRAS_NO_OK: 'revisor_compras',
   ANULAR: 'controles_adpro',
 };
 
@@ -233,6 +241,7 @@ const SNAPSHOT_POR_SLOT = {
   controles_aprobacion_final: 'responsable_controles_aprobacion_final_id',
   director_obra: 'responsable_director_obra_id',
   gerente_compras: 'responsable_gerente_compras_id',
+  revisor_compras: 'responsable_revisor_compras_id',
 };
 
 function resolverSlot(accion, estadoActual, categoria) {
@@ -325,6 +334,7 @@ const TODOS_LOS_SLOTS = [
   'controles_aprobacion_final',
   'director_obra',
   'gerente_compras',
+  'revisor_compras',
 ];
 
 // Reemplaza el viejo chequeo `revisar_contratos_${sufijo}` que usaban

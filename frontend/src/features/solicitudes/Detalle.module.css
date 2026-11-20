@@ -240,3 +240,43 @@
 .page table tbody tr:nth-child(even):not([style*="font-weight"]) td {
   background: color-mix(in srgb, var(--color-primary) 3%, white);
 }
+
+/* Concepto del revisor de Compras (OK / No OK) visible para quien firma Compras y Contrataciones. */
+.concepto {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.conceptoOk {
+  background: var(--color-success-surface);
+  color: var(--color-success-ink);
+}
+
+.conceptoNoOk {
+  background: var(--color-danger-surface);
+  color: var(--color-danger-ink);
+}
+
+.conceptoCuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.conceptoTitulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.conceptoNota {
+  margin: 4px 0 0;
+  color: var(--color-ink);
+}
+
+.conceptoMeta {
+  margin: 4px 0 0;
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}

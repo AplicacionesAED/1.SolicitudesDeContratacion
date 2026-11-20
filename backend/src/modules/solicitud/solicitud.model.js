@@ -82,6 +82,13 @@ const Solicitud = sequelize.define(
     // COMPLETADA. Mismo criterio de snapshot/fecha que los demás pasos.
     responsable_gerente_compras_id: { type: DataTypes.INTEGER, allowNull: true },
     fecha_aprobacion_gerente_compras: { type: DataTypes.DATE, allowNull: true },
+    // Concepto del revisor de Compras (2026-11-20): 'OK' | 'NO_OK' | null. Solo informativo para el Gerente de Compras;
+    // se limpia al (re)entrar al paso. Cada cambio queda en HistorialSolicitud.
+    responsable_revisor_compras_id: { type: DataTypes.INTEGER, allowNull: true },
+    concepto_compras: { type: DataTypes.STRING(10), allowNull: true },
+    nota_concepto_compras: { type: DataTypes.TEXT, allowNull: true },
+    fecha_concepto_compras: { type: DataTypes.DATE, allowNull: true },
+    concepto_compras_por: { type: DataTypes.STRING(150), allowNull: true },
 
     nota_contratacion: { type: DataTypes.TEXT, allowNull: true },
     necesita_revision: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },

@@ -24,6 +24,7 @@ const updateSchema = z.object({
   controles_aprobacion_final: slotSchema.optional(),
   director_obra: slotSchema.optional(),
   gerente_compras: slotSchema.optional(),
+  revisor_compras: slotSchema.optional(),
 });
 
 module.exports = { slotSchema, updateSchema };
