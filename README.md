@@ -71,3 +71,9 @@ Dockerfile  Imagen de producción (un contenedor)
 CLAUDE.md   Decisiones y estado del proyecto (para quien lo mantenga)
 DESIGN.md   Sistema de diseño
 ```
+
+## Login global del portal
+
+Solicitudes puede aceptar la sesión del portal AED (`portal.aed-it.com`) en lugar de su login propio. Se controla con la variable `PORTAL_AUTH` del backend (el frontend lo lee de `GET /api/auth/modo`, sin recompilar): `off` (por defecto, solo el login propio con Microsoft), `optional` (acepta ambos; el login suma "Entrar con el portal AED") y `required` (solo el portal: el login propio, el refresh y la vinculación de Microsoft responden 410, y `/login` manda al del portal).
+
+El portal solo dice **quién** es la persona y si le da acceso a Solicitudes; los roles, permisos, frentes y aprobadores siguen siendo de Solicitudes: la persona se busca por correo en `usuarios` y, si no existe, ve que debe pedir a un administrador que la cree. La verificación está en `backend/src/utils/portalAuth.js` (copia idéntica en todas las apps; la fuente y sus pruebas están en `0. PLATAFORMA AED/auth/cliente/`) y se aplica en `backend/src/middlewares/auth.js`. Plan completo: `0. PLATAFORMA AED/docs/PLAN-LOGIN-GLOBAL.md`.

@@ -18,7 +18,9 @@ import extra from '../terceros/Terceros.module.css';
 import p from './PerfilPage.module.css';
 
 export function PerfilPage() {
-  const { usuario, refrescarPerfil } = useAuth();
+  const { usuario, refrescarPerfil, modo } = useAuth();
+  // Con el portal obligatorio el login es el del portal: la vinculacion de Microsoft de esta app ya no aplica (sus rutas responden 410).
+  const conMicrosoftPropio = modo !== 'required';
   const [searchParams] = useSearchParams();
   const msLinked = searchParams.get('ms_linked');
   const msError = searchParams.get('ms_error');
@@ -65,7 +67,7 @@ export function PerfilPage() {
           <p className={layoutStyles.heroMeta}>{(usuario.roles ?? []).map((r) => ROL_LABELS[r] ?? r).join(' · ')}</p>
         </div>
         <div className={layoutStyles.heroSide}>
-          {usuario.microsoft_email ? <Badge variant="success" dot>Microsoft vinculada</Badge> : <Badge variant="neutral">Sin Microsoft</Badge>}
+          {conMicrosoftPropio && (usuario.microsoft_email ? <Badge variant="success" dot>Microsoft vinculada</Badge> : <Badge variant="neutral">Sin Microsoft</Badge>)}
         </div>
       </section>
 
@@ -114,20 +116,22 @@ export function PerfilPage() {
           )}
         </section>
 
-        <section className={styles.sectionCard}>
-          <div className={extra.sectionHead}>
-            <div>
-              <h2 className={styles.sectionTitle}>Cuenta de Microsoft</h2>
-              <p className={styles.sectionHint}>{usuario.microsoft_email ? `Vinculada a ${usuario.microsoft_email}. Puedes entrar con ella desde el login.` : 'Se vincula sola la primera vez que entras con "Continuar con Microsoft".'}</p>
+        {conMicrosoftPropio && (
+          <section className={styles.sectionCard}>
+            <div className={extra.sectionHead}>
+              <div>
+                <h2 className={styles.sectionTitle}>Cuenta de Microsoft</h2>
+                <p className={styles.sectionHint}>{usuario.microsoft_email ? `Vinculada a ${usuario.microsoft_email}. Puedes entrar con ella desde el login.` : 'Se vincula sola la primera vez que entras con "Continuar con Microsoft".'}</p>
+              </div>
+              {usuario.microsoft_email ? (
+                <Button type="button" variant="danger" onClick={handleDesvincular}>Desvincular</Button>
+              ) : (
+                <Button type="button" variant="secondary" onClick={iniciarVinculacionMicrosoft}>Vincular cuenta de Microsoft</Button>
+              )}
             </div>
-            {usuario.microsoft_email ? (
-              <Button type="button" variant="danger" onClick={handleDesvincular}>Desvincular</Button>
-            ) : (
-              <Button type="button" variant="secondary" onClick={iniciarVinculacionMicrosoft}>Vincular cuenta de Microsoft</Button>
-            )}
-          </div>
-          {errorMs && <div className={styles.errorBanner} role="alert">{errorMs}</div>}
-        </section>
+            {errorMs && <div className={styles.errorBanner} role="alert">{errorMs}</div>}
+          </section>
+        )}
       </div>
     </div>
   );

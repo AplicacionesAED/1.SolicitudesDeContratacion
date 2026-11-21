@@ -25,15 +25,25 @@ export function setSessionExpiredHandler(fn) {
   sessionExpiredHandler = fn;
 }
 
+// Modo de acceso (off | optional | required), lo fija AuthProvider al arrancar. Con el portal activo la sesion se renueva en el portal
+// (ruta absoluta del gateway, mismo dominio); en `optional` si el portal no la renueva se intenta con el login propio.
+let modoPortal = 'off';
+export function setModoPortal(modo) {
+  modoPortal = modo;
+}
+
+const renovar = (url) =>
+  fetch(url, { method: 'POST', credentials: 'include' })
+    .then((res) => res.ok)
+    .catch(() => false);
+
 let refreshingPromise = null;
 function refreshSession() {
   if (!refreshingPromise) {
-    refreshingPromise = fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' })
-      .then((res) => res.ok)
-      .catch(() => false)
-      .finally(() => {
-        refreshingPromise = null;
-      });
+    const propia = () => renovar(`${API_BASE_URL}/auth/refresh`);
+    refreshingPromise = (modoPortal === 'off' ? propia() : renovar('/portal/api/auth/refresh').then((ok) => (ok || modoPortal === 'required' ? ok : propia()))).finally(() => {
+      refreshingPromise = null;
+    });
   }
   return refreshingPromise;
 }

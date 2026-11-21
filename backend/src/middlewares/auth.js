@@ -3,7 +3,9 @@
 // escrituras/rutas restringidas. El rol/los permisos SIEMPRE se re-leen de la
 // BD en requireAuth (nunca del claim del JWT), así un token manipulado no
 // puede escalar privilegios -- ver createAccessToken en utils/security.js.
+const { Op } = require('sequelize');
 const { decodeToken, ACCESS_COOKIE_NAME } = require('../utils/security');
+const portalAuth = require('../utils/portalAuth');
 const { tienePermiso, getRolesFuncionalidades } = require('../utils/permisos');
 const ApiError = require('../utils/ApiError');
 const Usuario = require('../modules/usuario/usuario.model');
@@ -17,7 +19,43 @@ const Rol = require('../modules/rol/rol.model');
 // persistida) para que requireAdmin y cualquier modulo que reciba este mismo
 // `usuario`/`req.usuario` (solicitud.*, dashboard, presence, tercero.*) lo
 // lean de forma sincrona sin tener que repetir esta consulta.
+// Nombre de esta app en el portal (el portal le da acceso a la gente con este nombre).
+const APP_PORTAL = 'solicitudes';
+
+async function cargarEsAdmin(usuario) {
+  const rolesAdmin = await Rol.findAll({ where: { es_admin: true }, attributes: ['nombre'] });
+  const nombresAdmin = rolesAdmin.map((r) => r.nombre);
+  usuario.esAdmin = (usuario.roles ?? []).some((r) => nombresAdmin.includes(r));
+}
+
+// Con el portal activo (PORTAL_AUTH=optional|required) la identidad sale de la sesion del portal: aqui solo se busca a la persona por su
+// correo y se le aplican los roles y permisos de esta app (que siguen siendo de Solicitudes). `optional` cae al login propio si no hay
+// sesion del portal; `required` no.
 async function requireAuth(req, res, next) {
+  const modo = portalAuth.modo();
+  if (modo !== 'off') {
+    const sesion = await portalAuth.resolverSesion(req, APP_PORTAL);
+    const usuarioPortal =
+      sesion.estado === 'ok'
+        ? await Usuario.findOne({ where: { [Op.or]: [{ email: sesion.email }, { microsoft_email: sesion.email }], activo: true } })
+        : null;
+    if (usuarioPortal) {
+      await cargarEsAdmin(usuarioPortal);
+      req.usuario = usuarioPortal;
+      return next();
+    }
+
+    // Sin entrar por el portal: en `optional`, quien ya tiene su sesion propia sigue con ella (que el portal no le de la app no debe
+    // sacarlo de lo que ya usa durante la transicion); en `required` no hay otra puerta.
+    const conSesionPropia = modo === 'optional' && Boolean(req.cookies?.[ACCESS_COOKIE_NAME]);
+    if (!conSesionPropia) {
+      if (sesion.estado === 'cambiar-password') return next(new ApiError(403, 'Debes cambiar tu contraseña en el portal antes de continuar'));
+      if (sesion.estado === 'sin-acceso') return next(new ApiError(403, 'El portal no te da acceso a Solicitudes de Contratación. Pide acceso a TI.'));
+      if (sesion.estado === 'ok') return next(new ApiError(403, 'Tienes acceso en el portal, pero aún no existe un usuario de Solicitudes para tu correo. Pide a un administrador que lo cree.'));
+      return next(new ApiError(401, 'No autenticado'));
+    }
+  }
+
   const token = req.cookies?.[ACCESS_COOKIE_NAME];
   if (!token) return next(new ApiError(401, 'No autenticado'));
 
@@ -32,9 +70,7 @@ async function requireAuth(req, res, next) {
   const usuario = await Usuario.findOne({ where: { email: payload.sub, activo: true } });
   if (!usuario) return next(new ApiError(401, 'Usuario no encontrado'));
 
-  const rolesAdmin = await Rol.findAll({ where: { es_admin: true }, attributes: ['nombre'] });
-  const nombresAdmin = rolesAdmin.map((r) => r.nombre);
-  usuario.esAdmin = (usuario.roles ?? []).some((r) => nombresAdmin.includes(r));
+  await cargarEsAdmin(usuario);
 
   req.usuario = usuario;
   next();

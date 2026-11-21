@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown, LogOut, User } from 'lucide-react';
+import { ChevronDown, LayoutGrid, LogOut, User } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import styles from './UserMenu.module.css';
 
@@ -19,7 +19,9 @@ function initials(nombre) {
 // "Cerrar sesion". Mismo patron que la campana de notificaciones (containerRef +
 // onBlurCapture para cerrar al perder el foco) -- vive en .topbar, junto a ella.
 export function UserMenu() {
-  const { usuario, logout } = useAuth();
+  const { usuario, logout, modo } = useAuth();
+  // Con el portal activo y detras del gateway (/solicitudes/): hay un acceso al portal y el cierre de sesion termina en su login.
+  const conPortal = modo !== 'off' && import.meta.env.BASE_URL !== '/';
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
@@ -35,7 +37,9 @@ export function UserMenu() {
   async function handleLogout() {
     setOpen(false);
     await logout();
-    navigate('/login', { replace: true });
+    // El login ES el del portal (ruta absoluta del gateway), sin `next`: tras entrar de nuevo se llega a la landing, no a esta app.
+    if (conPortal) window.location.assign('/login');
+    else navigate('/login', { replace: true });
   }
 
   return (
@@ -55,6 +59,12 @@ export function UserMenu() {
             <span className={styles.panelEmail}>{usuario.email}</span>
           </div>
 
+          {conPortal && (
+            <a href="/" role="menuitem" className={styles.item}>
+              <LayoutGrid size={16} strokeWidth={1.75} aria-hidden="true" />
+              Portal AED
+            </a>
+          )}
           <Link to="/perfil" role="menuitem" className={styles.item} onClick={() => setOpen(false)}>
             <User size={16} strokeWidth={1.75} aria-hidden="true" />
             Mi perfil
