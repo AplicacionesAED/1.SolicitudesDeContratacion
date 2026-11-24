@@ -45,6 +45,17 @@ async function getDesviosActivos(accion) {
   }
 }
 
+// Estado destino de una acción ya con los desvíos aplicados: gana el primer desvío activo cuyas condiciones (rol del
+// solicitante / categoría; NULL = sin esa condición) cumplan. Sin desvío aplicable, queda `destinoBase`.
+async function resolverDestinoConDesvios(accion, destinoBase, categoria, rolesSolicitante) {
+  for (const d of await getDesviosActivos(accion)) {
+    const rolOk = !d.condicion_rol || (rolesSolicitante ?? []).includes(d.condicion_rol);
+    const categoriaOk = !d.condicion_categoria || categoria === d.condicion_categoria;
+    if (rolOk && categoriaOk) return d.estado_destino;
+  }
+  return destinoBase;
+}
+
 // ── Layout del canvas (2026-09-02, "dame acceso a modificar las líneas") ───
 
 // Sin fila todavía = null -- el frontend usa sus posiciones default
@@ -60,4 +71,4 @@ async function saveLayout(categoria, posiciones) {
   return layout.posiciones;
 }
 
-module.exports = { listDesvios, createDesvio, updateDesvio, removeDesvio, getDesviosActivos, getLayout, saveLayout };
+module.exports = { listDesvios, createDesvio, updateDesvio, removeDesvio, getDesviosActivos, resolverDestinoConDesvios, getLayout, saveLayout };

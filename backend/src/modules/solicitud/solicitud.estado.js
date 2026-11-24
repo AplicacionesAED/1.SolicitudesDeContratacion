@@ -17,7 +17,7 @@ const ApiError = require('../../utils/ApiError');
 const sequelize = require('../../config/db');
 const { getRolesFuncionalidades, getRolesPorCodigo } = require('../../utils/permisos');
 const workflowService = require('../workflow/workflow.service');
-const { ESTADOS_ORIGEN, ESTADO_DESTINO, puedeEjecutarAccion, resolverDestinoDevolver } = require('./solicitud.autorizacion');
+const { ESTADOS_ORIGEN, ESTADO_DESTINO, puedeEjecutarAccion, resolverDestinoDevolver, esDirectorObraDeSolicitud, idsUsuariosDelPaso } = require('./solicitud.autorizacion');
 const Solicitud = require('./solicitud.model');
 const HistorialSolicitud = require('./historialSolicitud.model');
 const solicitudService = require('./solicitud.service');
@@ -248,19 +248,19 @@ const cambiarEstado = asyncHandler(async (req, res) => {
   // primera fila activa que matchee gana. Esto es independiente de
   // puedeEjecutarAccion -- decide A DÓNDE va la solicitud, no QUIÉN puede
   // moverla.
-  const desvios = await workflowService.getDesviosActivos(accion);
-  for (const d of desvios) {
-    const rolOk = !d.condicion_rol || (solicitud.solicitante?.roles ?? []).includes(d.condicion_rol);
-    const categoriaOk = !d.condicion_categoria || solicitud.categoria === d.condicion_categoria;
-    if (rolOk && categoriaOk) {
-      estadoDestino = d.estado_destino;
-      break;
-    }
-  }
+  const aplicarDesvios = (accionDesvio, destinoBase) => workflowService.resolverDestinoConDesvios(accionDesvio, destinoBase, solicitud.categoria, solicitud.solicitante?.roles);
+  estadoDestino = await aplicarDesvios(accion, estadoDestino);
+
+  // Directa (2026-11-24): si quien envía es el propio Director de Obra de la solicitud, su aprobación se da por hecha -- la
+  // solicitud salta el paso ENVIADA y sigue a donde la llevaría APROBAR_DIRECTOR (con sus desvíos). En el historial quedan
+  // las dos acciones (el envío y la aprobación automática), así el stepper marca el paso como completado.
+  const estadoTrasEnvio = estadoDestino;
+  const autoAprobadaDirectorObra = (accion === 'ENVIAR' || accion === 'REENVIAR') && estadoDestino === 'ENVIADA' && (await esDirectorObraDeSolicitud(solicitud, req.usuario));
+  if (autoAprobadaDirectorObra) estadoDestino = await aplicarDesvios('APROBAR_DIRECTOR', ESTADO_DESTINO.APROBAR_DIRECTOR);
 
   const estadoOrigen = solicitud.estado;
   const updateData = { estado: estadoDestino };
-  if (accion === 'APROBAR_DIRECTOR') updateData.fecha_aprobacion_director = new Date();
+  if (accion === 'APROBAR_DIRECTOR' || autoAprobadaDirectorObra) updateData.fecha_aprobacion_director = new Date();
   // Flujo propio de Directa -- "Controles realiza proyección, debe dar su
   // aprobado con fecha de aprobación" (2026-09-18). Mismo patrón que
   // fecha_aprobacion_director: se estampa sola, no es un campo manual.
@@ -298,7 +298,17 @@ const cambiarEstado = asyncHandler(async (req, res) => {
   await sequelize.transaction(async (transaction) => {
     await solicitud.update(updateData, { transaction });
 
-    await HistorialSolicitud.create({ solicitud_id: numId, usuario_id: userId, accion, nota: nota ?? null, estado_resultante: estadoDestino }, { transaction });
+    if (autoAprobadaDirectorObra) {
+      // Fechas explícitas con 1 ms de diferencia: el stepper ordena por fecha y necesita el envío ANTES de la aprobación.
+      const ahora = Date.now();
+      await HistorialSolicitud.create({ solicitud_id: numId, usuario_id: userId, accion, nota: nota ?? null, estado_resultante: estadoTrasEnvio, fecha: new Date(ahora) }, { transaction });
+      await HistorialSolicitud.create(
+        { solicitud_id: numId, usuario_id: userId, accion: 'APROBAR_DIRECTOR', nota: 'Aprobación automática: la solicitud la envió el propio Director de Obra.', estado_resultante: estadoDestino, fecha: new Date(ahora + 1) },
+        { transaction }
+      );
+    } else {
+      await HistorialSolicitud.create({ solicitud_id: numId, usuario_id: userId, accion, nota: nota ?? null, estado_resultante: estadoDestino }, { transaction });
+    }
 
     // Si se completa un OTROSI_TIEMPO_CANTIDAD, actualizar valorFinal del padre.
     if (estadoDestino === 'COMPLETADA' && solicitud.tipo === 'OTROSI_TIEMPO_CANTIDAD' && solicitud.solicitud_padre_id != null && solicitud.valor_final != null) {
@@ -311,6 +321,12 @@ const cambiarEstado = asyncHandler(async (req, res) => {
   // confirmada, por eso todo el bloque va en su propio try/catch sin await
   // bloqueante del response.
   try {
+    // Avisos de "paso pendiente": a TODOS los que pueden aprobar ese paso (2026-11-24), no solo al primero del slot.
+    const delPaso = (slot) => idsUsuariosDelPaso(solicitud, slot);
+    const avisarPaso = async (slot, enviar) => {
+      for (const id of await delPaso(slot)) await enviar(id);
+    };
+
     if (accion === 'ENVIAR') {
       if (estadoDestino === 'PENDIENTE_DIRECTOR_TECNICO') {
         // Resuelto por código, no por el string 'DIRECTOR_TECNICO' a secas
@@ -323,13 +339,31 @@ const cambiarEstado = asyncHandler(async (req, res) => {
             await notificacionService.notificarNuevaSolicitud(numId, solicitud.solicitante.nombre, solicitud.consecutivo, dt.id);
           }
         }
-      } else if (solicitud.aprobador_id) {
-        await notificacionService.notificarNuevaSolicitud(numId, solicitud.solicitante.nombre, solicitud.consecutivo, solicitud.aprobador_id);
+      } else if (solicitud.categoria === 'INDIRECTA') {
+        await avisarPaso('director_proyecto', (id) => notificacionService.notificarNuevaSolicitud(numId, solicitud.solicitante.nombre, solicitud.consecutivo, id));
       }
     }
 
-    if (accion === 'APROBAR_DIRECTOR_TECNICO' && solicitud.aprobador_id) {
-      await notificacionService.notificarNuevaSolicitud(numId, solicitud.solicitante.nombre, solicitud.consecutivo, solicitud.aprobador_id);
+    // Directa enviada o reenviada que queda esperando al Director de Obra (`aprobador_id` es null en Directa, el aviso de
+    // arriba nunca le llega).
+    if ((accion === 'ENVIAR' || accion === 'REENVIAR') && solicitud.categoria === 'DIRECTA' && estadoDestino === 'ENVIADA') {
+      await avisarPaso('director_obra', (id) => notificacionService.notificarNuevaSolicitud(numId, solicitud.solicitante.nombre, solicitud.consecutivo, id));
+    }
+
+    // Envío del propio Director de Obra (Directa): no hay aprobación que pedir, se avisa al siguiente responsable.
+    if (autoAprobadaDirectorObra && estadoDestino === 'PENDIENTE_RESIDENTE_ADMINISTRATIVO') {
+      await avisarPaso('residente_administrativo', (id) =>
+        notificacionService.crearNotificacion(
+          id,
+          'Solicitud pendiente de tu aprobación',
+          `El Director de Obra envió la solicitud ${solicitud.consecutivo}; debes revisarla y aprobarla como Residente Administrativo.`,
+          `/solicitudes/${numId}`
+        )
+      );
+    }
+
+    if (accion === 'APROBAR_DIRECTOR_TECNICO') {
+      await avisarPaso('director_proyecto', (id) => notificacionService.notificarNuevaSolicitud(numId, solicitud.solicitante.nombre, solicitud.consecutivo, id));
     }
 
     if (accion === 'APROBAR_DIRECTOR') {
@@ -343,18 +377,20 @@ const cambiarEstado = asyncHandler(async (req, res) => {
       // para tramitar en contratación", que no aplica acá (ver notificacion.
       // service.js). INDIRECTA no cambia: sigue avisando a Contratos-Trámite.
       if (solicitud.categoria === 'DIRECTA') {
-        await notificacionService.notificarPendienteResidenteAdministrativo(numId, solicitud.consecutivo, solicitud.solicitante_id, solicitud.responsable_residente_administrativo_id);
+        await notificacionService.notificarPendienteResidenteAdministrativo(numId, solicitud.consecutivo, solicitud.solicitante_id, await delPaso('residente_administrativo'));
       } else {
-        await notificacionService.notificarAprobadaDirector(numId, solicitud.consecutivo, solicitud.solicitante_id, solicitud.responsable_contratos_tramite_id);
+        await notificacionService.notificarAprobadaDirector(numId, solicitud.consecutivo, solicitud.solicitante_id, await delPaso('contratos_tramite'));
       }
     }
 
-    if (accion === 'APROBAR_RESIDENTE_ADMINISTRATIVO' && solicitud.responsable_controles_proyeccion_id) {
-      await notificacionService.notificarAprobadaResidenteAdministrativo(numId, solicitud.consecutivo, solicitud.responsable_controles_proyeccion_id);
+    if (accion === 'APROBAR_RESIDENTE_ADMINISTRATIVO') {
+      await avisarPaso('controles_proyeccion', (id) => notificacionService.notificarAprobadaResidenteAdministrativo(numId, solicitud.consecutivo, id));
     }
 
-    if (accion === 'APROBAR_PROYECCION' && solicitud.responsable_contratos_tramite_id) {
-      await notificacionService.notificarAprobadaProyeccion(numId, solicitud.consecutivo, solicitud.responsable_contratos_tramite_id);
+    // Solo si de verdad va a Trámite Contratos: en Directa el desvío la lleva a Compras y Contrataciones
+    // (PENDIENTE_GERENTE_COMPRAS) y ese aviso se manda más abajo.
+    if (accion === 'APROBAR_PROYECCION' && estadoDestino === 'EN_TRAMITE_CONTRATOS') {
+      await avisarPaso('contratos_tramite', (id) => notificacionService.notificarAprobadaProyeccion(numId, solicitud.consecutivo, id));
     }
 
     if (accion === 'DEVOLVER' && nota) {
@@ -366,7 +402,7 @@ const cambiarEstado = asyncHandler(async (req, res) => {
       // caso DEVUELTA (destino real de paso 2/3 y toda INDIRECTA) sigue
       // notificando al solicitante como siempre, sin cambios.
       if (estadoDestino === 'PENDIENTE_RESIDENTE_ADMINISTRATIVO') {
-        await notificacionService.notificarDevueltaAResidenteAdministrativo(numId, solicitud.consecutivo, solicitud.responsable_residente_administrativo_id, nota);
+        await avisarPaso('residente_administrativo', (id) => notificacionService.notificarDevueltaAResidenteAdministrativo(numId, solicitud.consecutivo, id, nota));
       } else {
         await notificacionService.notificarDevuelta(numId, solicitud.consecutivo, solicitud.solicitante_id, nota);
       }
@@ -387,26 +423,29 @@ const cambiarEstado = asyncHandler(async (req, res) => {
     // Directa (2026-11-05): tras Controles — Proyección la solicitud va directo a "Compras y Contrataciones" (desvío de
     // APROBAR_PROYECCION a PENDIENTE_GERENTE_COMPRAS) -- se avisa al Gerente de Compras asignado para su firma.
     if (accion === 'APROBAR_PROYECCION' && estadoDestino === 'PENDIENTE_GERENTE_COMPRAS') {
-      await notificacionService.notificarPendienteGerenteCompras(numId, solicitud.consecutivo, solicitud.responsable_gerente_compras_id);
+      await avisarPaso('gerente_compras', (id) => notificacionService.notificarPendienteGerenteCompras(numId, solicitud.consecutivo, id));
     }
 
     if (accion === 'AVANZAR_CONTRATOS' || accion === 'PASAR_CONTROLES') {
       // Directa: un desvío redirige AVANZAR_CONTRATOS a PENDIENTE_GERENTE_COMPRAS -- se avisa al Gerente de Compras
       // asignado para su firma en vez de a Controles.
       if (estadoDestino === 'PENDIENTE_GERENTE_COMPRAS') {
-        await notificacionService.notificarPendienteGerenteCompras(numId, solicitud.consecutivo, solicitud.responsable_gerente_compras_id);
-      } else if (solicitud.coordinador_controles_id) {
-        await notificacionService.notificarControles(numId, solicitud.consecutivo, solicitud.coordinador_controles_id);
+        await avisarPaso('gerente_compras', (id) => notificacionService.notificarPendienteGerenteCompras(numId, solicitud.consecutivo, id));
+      } else {
+        await avisarPaso('controles_adpro', (id) => notificacionService.notificarControles(numId, solicitud.consecutivo, id));
       }
     }
 
     // Al entrar a Compras y Contrataciones también se avisa al revisor para que dé su concepto (opcional).
     if (estadoDestino === 'PENDIENTE_GERENTE_COMPRAS' && estadoOrigen !== 'PENDIENTE_GERENTE_COMPRAS') {
-      await notificacionService.notificarRevisionCompras(numId, solicitud.consecutivo, solicitud.responsable_revisor_compras_id);
+      await avisarPaso('revisor_compras', (id) => notificacionService.notificarRevisionCompras(numId, solicitud.consecutivo, id));
     }
 
-    if (accion === 'REGISTRAR_ADPRO' && solicitud.director_controles_id) {
-      await notificacionService.notificarAdproRegistrado(numId, solicitud.consecutivo, solicitud.director_controles_id);
+    // La aprobación final la da `director_controles` en Indirecta y `controles_aprobacion_final` en Directa (en Directa
+    // `director_controles` siempre está vacío: ese slot no se configura ahí).
+    if (accion === 'REGISTRAR_ADPRO') {
+      const slotAprobacionFinal = solicitud.categoria === 'DIRECTA' ? 'controles_aprobacion_final' : 'director_controles';
+      await avisarPaso(slotAprobacionFinal, (id) => notificacionService.notificarAdproRegistrado(numId, solicitud.consecutivo, id));
     }
 
     if (accion === 'APROBAR_FINAL') {
@@ -414,8 +453,8 @@ const cambiarEstado = asyncHandler(async (req, res) => {
     }
 
     // Firma del Gerente de Compras (Directa): la solicitud continúa a Adpro con el Residente Administrativo.
-    if (accion === 'APROBAR_GERENTE_COMPRAS' && solicitud.responsable_residente_administrativo_id) {
-      await notificacionService.notificarControles(numId, solicitud.consecutivo, solicitud.responsable_residente_administrativo_id);
+    if (accion === 'APROBAR_GERENTE_COMPRAS') {
+      await avisarPaso('residente_administrativo', (id) => notificacionService.notificarControles(numId, solicitud.consecutivo, id));
     }
   } catch (notifError) {
     console.error('Error al enviar notificaciones:', notifError);

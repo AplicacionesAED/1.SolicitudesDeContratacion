@@ -22,12 +22,13 @@ async function notificarNuevaSolicitud(solicitudId, solicitanteNombre, consecuti
   );
 }
 
+// `contratosUserId` acepta un id o una lista de ids (se avisa a todos los del paso).
 async function notificarAprobadaDirector(solicitudId, consecutivo, solicitanteId, contratosUserId) {
   const tareas = [
     crearNotificacion(solicitanteId, 'Solicitud aprobada por Director', `Tu solicitud ${consecutivo} fue aprobada por el Director de Proyecto.`, `/solicitudes/${solicitudId}`),
   ];
-  if (contratosUserId) {
-    tareas.push(crearNotificacion(contratosUserId, 'Nueva solicitud en trámite', `La solicitud ${consecutivo} está lista para tramitar en contratación.`, `/solicitudes/${solicitudId}`));
+  for (const id of [].concat(contratosUserId ?? []).filter(Boolean)) {
+    tareas.push(crearNotificacion(id, 'Nueva solicitud en trámite', `La solicitud ${consecutivo} está lista para tramitar en contratación.`, `/solicitudes/${solicitudId}`));
   }
   await Promise.all(tareas);
 }
@@ -78,12 +79,13 @@ async function notificarAprobadaProyeccion(solicitudId, consecutivo, contratosUs
 // patrón de firma que notificarAprobadaDirector: avisa al solicitante que
 // su solicitud fue aprobada y al responsable del paso siguiente con texto
 // propio.
+// `residenteAdministrativoUserId` acepta un id o una lista de ids (se avisa a todos los del paso).
 async function notificarPendienteResidenteAdministrativo(solicitudId, consecutivo, solicitanteId, residenteAdministrativoUserId) {
   const tareas = [
     crearNotificacion(solicitanteId, 'Solicitud aprobada por Director de Obra', `Tu solicitud ${consecutivo} fue aprobada por el Director de Obra.`, `/solicitudes/${solicitudId}`),
   ];
-  if (residenteAdministrativoUserId) {
-    tareas.push(crearNotificacion(residenteAdministrativoUserId, 'Solicitud pendiente de tu aprobación', `El Director de Obra aprobó la solicitud ${consecutivo}; debes revisarla y aprobarla como Residente Administrativo.`, `/solicitudes/${solicitudId}`));
+  for (const id of [].concat(residenteAdministrativoUserId ?? []).filter(Boolean)) {
+    tareas.push(crearNotificacion(id, 'Solicitud pendiente de tu aprobación', `El Director de Obra aprobó la solicitud ${consecutivo}; debes revisarla y aprobarla como Residente Administrativo.`, `/solicitudes/${solicitudId}`));
   }
   await Promise.all(tareas);
 }

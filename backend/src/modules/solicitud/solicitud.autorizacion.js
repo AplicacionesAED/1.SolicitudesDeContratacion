@@ -16,6 +16,7 @@
 // propósito -- eso nunca fue lo que se pidió hacer configurable.
 const { tienePermiso, getRolesPorCodigo } = require('../../utils/permisos');
 const AprobadorFrente = require('../aprobadorFrente/aprobadorFrente.model');
+const Usuario = require('../usuario/usuario.model');
 
 // ANULAR (2026-09-09, pedido del usuario: "no quiero eliminarlas
 // directamente... que la persona de Controles que registra el N° Adpro
@@ -329,6 +330,43 @@ async function puedeEjecutarAccion(solicitud, usuario, accion, funcionalidadesPo
   return false;
 }
 
+// ¿Es este usuario el Director de Obra de ESTA solicitud? (el asignado al crearla o alguien del slot `director_obra` de su
+// frente). Sin bypass de ADMIN a propósito: lo usa solicitud.estado.js para saltar la aprobación del Director de Obra cuando
+// él mismo envía la solicitud, y un admin que envía no es el Director de Obra.
+async function esDirectorObraDeSolicitud(solicitud, usuario) {
+  if (solicitud.categoria !== 'DIRECTA') return false;
+  if (solicitud.responsable_director_obra_id && Number(solicitud.responsable_director_obra_id) === Number(usuario.id)) return true;
+  return usuarioAutorizadoParaSlot(solicitud.frentes_ids ?? [], usuario, 'director_obra', 'DIRECTA');
+}
+
+// A quiénes avisar que un paso los espera (2026-11-24, "a todos"): todos los que pueden aprobarlo, no solo el primero
+// del slot -- el asignado al crear la solicitud (snapshot) más los usuarios ACTIVOS del slot del frente (por usuario o por
+// rol) y, en los pasos de Controles, quienes tienen ese rol de Controles (actúan en todos los frentes). Mismo criterio
+// que usuarioAutorizadoParaSlot, visto al revés.
+async function idsUsuariosDelPaso(solicitud, slot) {
+  const ids = new Set();
+  const snapshotCampo = SNAPSHOT_POR_SLOT[slot];
+  if (snapshotCampo && solicitud[snapshotCampo]) ids.add(Number(solicitud[snapshotCampo]));
+
+  const frenteIds = solicitud.frentes_ids ?? [];
+  const config = frenteIds.length ? await AprobadorFrente.findOne({ where: { frente_id: frenteIds, categoria: solicitud.categoria } }) : null;
+  const usuariosSlot = (config?.[slot]?.usuarios ?? []).map(Number);
+  const rolesSlot = [...(config?.[slot]?.roles ?? [])];
+  const codigoRolControles = CODIGO_ROL_CONTROLES_POR_SLOT[slot];
+  if (codigoRolControles) {
+    const nombreRol = (await getRolesPorCodigo())[codigoRolControles];
+    if (nombreRol) rolesSlot.push(nombreRol);
+  }
+
+  if (usuariosSlot.length || rolesSlot.length) {
+    const activos = await Usuario.findAll({ where: { activo: true }, attributes: ['id', 'roles'] });
+    for (const u of activos) {
+      if (usuariosSlot.includes(Number(u.id)) || (u.roles ?? []).some((r) => rolesSlot.includes(r))) ids.add(Number(u.id));
+    }
+  }
+  return [...ids];
+}
+
 // Lista de acciones que ESTE usuario puede ejecutar AHORA sobre ESTA
 // solicitud -- consumido por solicitud.service.js para exponer
 // `accionesDisponibles`, que el frontend lee en vez de recalcular permisos
@@ -442,6 +480,8 @@ module.exports = {
   tieneCrearSolicitudes,
   puedeListarSolicitudes,
   puedeEjecutarAccion,
+  esDirectorObraDeSolicitud,
+  idsUsuariosDelPaso,
   getAccionesDisponibles,
   puedeGestionarSolicitud,
   puedeEditarSolicitud,

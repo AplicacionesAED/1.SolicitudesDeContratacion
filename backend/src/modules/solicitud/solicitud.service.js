@@ -27,7 +27,9 @@ const MemoriaFila = require('./memoriaFila.model');
 const { getRolesAlcanceSolicitudes, resolverAlcanceSolicitudes, getRolesFuncionalidades, getRolesPorCodigo } = require('../../utils/permisos');
 const { generarConsecutivo } = require('./solicitud.consecutivo');
 const { nextNumeroOtrosi, pickMostRecentOtrosi } = require('./solicitud.otrosi');
-const { puedeGestionarSolicitud, getAccionesDisponibles, puedeEditarSolicitud, puedeEjecutarAccion, resolverSlot, ACCION_PRINCIPAL_POR_ESTADO, SNAPSHOT_POR_SLOT } = require('./solicitud.autorizacion');
+const { puedeGestionarSolicitud, getAccionesDisponibles, puedeEditarSolicitud, puedeEjecutarAccion, resolverSlot, esDirectorObraDeSolicitud, idsUsuariosDelPaso, ACCION_PRINCIPAL_POR_ESTADO, SNAPSHOT_POR_SLOT, ESTADO_DESTINO } = require('./solicitud.autorizacion');
+const workflowService = require('../workflow/workflow.service');
+const notificacionService = require('../notificacion/notificacion.service');
 
 const CAMPO_DB = {
   proyectoId: 'proyecto_id',
@@ -571,6 +573,11 @@ async function crearOtrosi(body, usuario) {
   const finalValorFinal = tipo === 'OTROSI_TIEMPO_CANTIDAD' && valorFinal != null ? valorFinal : parent.valor_final;
   const finalValorEnLetras = tipo === 'OTROSI_TIEMPO_CANTIDAD' && valorFinal != null ? (valorEnLetras ?? null) : parent.valor_en_letras;
 
+  // Directa (2026-11-24): si quien crea el otrosí es el Director de Obra del contrato, su aprobación se da por hecha (misma
+  // regla que ENVIAR/REENVIAR en solicitud.estado.js) -- el otrosí nace en el estado al que lo llevaría APROBAR_DIRECTOR.
+  const autoAprobadaDirectorObra = await esDirectorObraDeSolicitud(parent, usuario);
+  const estadoInicial = autoAprobadaDirectorObra ? await workflowService.resolverDestinoConDesvios('APROBAR_DIRECTOR', ESTADO_DESTINO.APROBAR_DIRECTOR, parent.categoria, usuario.roles) : 'ENVIADA';
+
   const creada = await sequelize.transaction(async (transaction) => {
     const consecutivo = await generarConsecutivo(tipo, parent.categoria, parent.proyecto_id, frentesIds[0], transaction);
 
@@ -589,7 +596,16 @@ async function crearOtrosi(body, usuario) {
         responsable_contratos_minuta_id: parent.responsable_contratos_minuta_id,
         coordinador_controles_id: parent.coordinador_controles_id,
         director_controles_id: parent.director_controles_id,
-        estado: 'ENVIADA',
+        // Responsables del flujo Directa: sin ellos el otrosí avanza (la autorización usa el slot del frente) pero nadie
+        // recibe aviso en cada paso. En un padre Indirecta son null, igual que antes.
+        responsable_controles_proyeccion_id: parent.responsable_controles_proyeccion_id,
+        responsable_residente_administrativo_id: parent.responsable_residente_administrativo_id,
+        responsable_controles_aprobacion_final_id: parent.responsable_controles_aprobacion_final_id,
+        responsable_director_obra_id: parent.responsable_director_obra_id,
+        responsable_gerente_compras_id: parent.responsable_gerente_compras_id,
+        responsable_revisor_compras_id: parent.responsable_revisor_compras_id,
+        estado: estadoInicial,
+        fecha_aprobacion_director: autoAprobadaDirectorObra ? new Date() : null,
         tercero_id: parent.tercero_id,
         descripcion_actividad: parent.descripcion_actividad,
         plazo_ejecucion: parent.plazo_ejecucion,
@@ -604,10 +620,36 @@ async function crearOtrosi(body, usuario) {
       { transaction }
     );
 
-    await HistorialSolicitud.create({ solicitud_id: nueva.id, usuario_id: usuario.id, accion: 'ENVIAR', nota: null, estado_resultante: 'ENVIADA' }, { transaction });
+    if (autoAprobadaDirectorObra) {
+      // Fechas explícitas con 1 ms de diferencia: el stepper ordena por fecha y necesita el envío ANTES de la aprobación.
+      const ahora = Date.now();
+      await HistorialSolicitud.create({ solicitud_id: nueva.id, usuario_id: usuario.id, accion: 'ENVIAR', nota: null, estado_resultante: 'ENVIADA', fecha: new Date(ahora) }, { transaction });
+      await HistorialSolicitud.create(
+        { solicitud_id: nueva.id, usuario_id: usuario.id, accion: 'APROBAR_DIRECTOR', nota: 'Aprobación automática: la solicitud la envió el propio Director de Obra.', estado_resultante: estadoInicial, fecha: new Date(ahora + 1) },
+        { transaction }
+      );
+    } else {
+      await HistorialSolicitud.create({ solicitud_id: nueva.id, usuario_id: usuario.id, accion: 'ENVIAR', nota: null, estado_resultante: 'ENVIADA' }, { transaction });
+    }
 
     return nueva;
   });
+
+  // Best-effort, fuera de la transacción: se avisa a todos los Residentes Administrativos del paso.
+  if (autoAprobadaDirectorObra && estadoInicial === 'PENDIENTE_RESIDENTE_ADMINISTRATIVO') {
+    try {
+      for (const id of await idsUsuariosDelPaso(creada, 'residente_administrativo')) {
+        await notificacionService.crearNotificacion(
+          id,
+          'Solicitud pendiente de tu aprobación',
+          `El Director de Obra envió la solicitud ${creada.consecutivo}; debes revisarla y aprobarla como Residente Administrativo.`,
+          `/solicitudes/${creada.id}`
+        );
+      }
+    } catch (notifError) {
+      console.error('Error al enviar notificaciones:', notifError);
+    }
+  }
 
   return getById(creada.id, usuario);
 }
