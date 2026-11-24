@@ -194,3 +194,5 @@ migración; **no** va en producción.
   `scripts/importarDatosLegado.js` (corte único, **destructivo**) y `scripts/rehacerBaseProduccion.js` (una sola vez contra la
   base nueva). No volver a correrlos.
 - Actividad/presencia fue eliminada (código y tablas); no reintroducir. Las notificaciones en vivo (SSE) siguen.
+  Excepción aprobada por el usuario (2026-11-24): `frontend/index.html` carga el latido del portal (`/actividad.js`, lo sirve
+  el gateway) para el "En línea" del panel de administración del portal; no guarda nada en esta app.
