@@ -11,7 +11,7 @@
 // Rendimiento: cada fila es un React.memo (cambia solo la fila editada); los handlers son estables (leen el último
 // `value` de una ref) y la navegación por teclado/pegado se delega en el <tbody> con data-row/data-col.
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Check, ClipboardPaste, MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Check, ClipboardPaste, FileUp, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field } from '../../components/ui/Field.jsx';
 import { FileField } from '../../components/ui/FileField.jsx';
@@ -35,6 +35,7 @@ import {
   totalesCuadro,
 } from '../../utils/cuadroComparativo.js';
 import s from './CuadroComparativoGrid.module.css';
+import fileStyles from '../../components/ui/FileField.module.css';
 
 const AIU_POR_DEFECTO = { administracionPct: 5, imprevistoPct: 5, utilidadPct: 5, ivaUtilidadPct: 19 };
 const AIU_EN_CERO = { administracionPct: 0, imprevistoPct: 0, utilidadPct: 0, ivaUtilidadPct: 0 };
@@ -90,13 +91,15 @@ function NumInput({ value, onCommit, className, ...resto }) {
   );
 }
 
-const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
+// `ro` (solo lectura, detalle de la solicitud): mismas celdas y estilos, pero los campos no se editan, no hay borrar fila
+// ni avisos de dato faltante.
+const Fila = memo(function Fila({ it, idx, pid, abierta, acc, ro }) {
   const c = calcularFila(it, pid);
   const empezada = filaEmpezada(it, pid);
   const sobre = esNum(it.cantidadReal) && esNum(it.cantidad) && Number(it.cantidadReal) > Number(it.cantidad);
   const unidades = it.unidad && !UNIDADES.includes(it.unidad) ? [...UNIDADES, it.unidad] : UNIDADES;
   const aria = (col) => `${col.largo}, fila ${idx + 1}`;
-  const falta = (col, vacio) => (empezada && vacio ? s.falta : '');
+  const falta = (col, vacio) => (!ro && empezada && vacio ? s.falta : '');
 
   const texto = (col, clase) => (
     <input
@@ -105,7 +108,8 @@ const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
       data-col={COLUMNAS.indexOf(col)}
       value={it[col.campo] ?? ''}
       onChange={(e) => acc.update(idx, col, e.target.value)}
-      placeholder={col.key === 'codItem' ? 'Sub cap.-ítem' : col.key === 'codInsumo' ? 'Cód. insumo' : col.key === 'actividad' ? 'Actividad o insumo' : 'Alcance'}
+      readOnly={ro}
+      placeholder={ro ? undefined : col.key === 'codItem' ? 'Sub cap.-ítem' : col.key === 'codInsumo' ? 'Cód. insumo' : col.key === 'actividad' ? 'Actividad o insumo' : 'Alcance'}
       aria-label={aria(col)}
       autoComplete="off"
     />
@@ -117,6 +121,7 @@ const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
       data-col={COLUMNAS.indexOf(col)}
       value={getValor(it, col, pid)}
       onCommit={(v) => acc.update(idx, col, v)}
+      readOnly={ro}
       aria-label={aria(col)}
     />
   );
@@ -140,7 +145,8 @@ const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
               data-col={2}
               value={it.actividad ?? ''}
               onChange={(e) => acc.update(idx, cActividad, e.target.value)}
-              placeholder="Actividad o insumo"
+              readOnly={ro}
+              placeholder={ro ? undefined : 'Actividad o insumo'}
               aria-label={aria(cActividad)}
               aria-required="true"
               autoComplete="off"
@@ -149,12 +155,16 @@ const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
           </div>
         </td>
         <td className={s.gs}>
-          <select data-row={idx} data-col={4} value={it.unidad ?? ''} onChange={(e) => acc.update(idx, cUnd, e.target.value)} aria-label={aria(cUnd)}>
-            {!it.unidad && <option value="">—</option>}
-            {unidades.map((u) => (
-              <option key={u} value={u}>{u}</option>
-            ))}
-          </select>
+          {ro ? (
+            <input data-row={idx} data-col={4} value={it.unidad ?? ''} readOnly aria-label={aria(cUnd)} />
+          ) : (
+            <select data-row={idx} data-col={4} value={it.unidad ?? ''} onChange={(e) => acc.update(idx, cUnd, e.target.value)} aria-label={aria(cUnd)}>
+              {!it.unidad && <option value="">—</option>}
+              {unidades.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          )}
         </td>
         <td>{numero(cPendCant)}</td>
         <td>{numero(cPendVr)}</td>
@@ -174,9 +184,11 @@ const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
           <button type="button" className={`${s.ib} ${abierta ? s.ibOn : ''}`} onClick={() => acc.toggleObs(it._k, abierta)} title="Observaciones" aria-label={`Observaciones de la fila ${idx + 1}`} aria-expanded={abierta}>
             <MessageSquare size={16} aria-hidden="true" />
           </button>
-          <button type="button" className={`${s.ib} ${s.ibDel}`} onClick={() => acc.borrar(idx)} title="Eliminar fila" aria-label={`Eliminar la fila ${idx + 1}`}>
-            <Trash2 size={16} aria-hidden="true" />
-          </button>
+          {!ro && (
+            <button type="button" className={`${s.ib} ${s.ibDel}`} onClick={() => acc.borrar(idx)} title="Eliminar fila" aria-label={`Eliminar la fila ${idx + 1}`}>
+              <Trash2 size={16} aria-hidden="true" />
+            </button>
+          )}
         </td>
       </tr>
       {abierta && (
@@ -184,8 +196,8 @@ const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
           <td colSpan={12}>
             <div className={s.obsWrap}>
               <label htmlFor={`obs-${it._k}`}>Observaciones</label>
-              <input id={`obs-${it._k}`} className={s.obsInput} value={it.observaciones ?? ''} onChange={(e) => acc.setObs(idx, it._k, e.target.value)} placeholder="Notas sobre este ítem" autoComplete="off" />
-              <button type="button" className={s.linkbtn} onClick={() => acc.obsATodos(idx)} title="Copia este texto en las observaciones de todos los ítems">Aplicar a todos</button>
+              <input id={`obs-${it._k}`} className={s.obsInput} value={it.observaciones ?? ''} onChange={(e) => acc.setObs(idx, it._k, e.target.value)} readOnly={ro} placeholder={ro ? undefined : 'Notas sobre este ítem'} autoComplete="off" />
+              {!ro && <button type="button" className={s.linkbtn} onClick={() => acc.obsATodos(idx)} title="Copia este texto en las observaciones de todos los ítems">Aplicar a todos</button>}
             </div>
           </td>
         </tr>
@@ -194,11 +206,15 @@ const Fila = memo(function Fila({ it, idx, pid, abierta, acc }) {
   );
 });
 
-export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', nitProveedor = '', contexto = {}, cotizacion, onCotizacionChange, errorCotizacion, sinAiu = false, children }) {
+// `soloLectura` (2026-11-26, detalle de la solicitud: "debe verse de la misma forma que el formulario"): el mismo cuadro
+// del formulario, sin editar nada -- no normaliza ni llama a `onChange`, oculta agregar/pegar/borrar y el panel "Estado
+// del paso", y la cotización se muestra con un enlace (`urlCotizacion`) en vez del botón de subir.
+export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', nitProveedor = '', contexto = {}, cotizacion, onCotizacionChange, errorCotizacion, sinAiu = false, soloLectura = false, urlCotizacion, children }) {
   const aiuBase = sinAiu ? AIU_EN_CERO : AIU_POR_DEFECTO;
   const proveedor = value.proveedores?.[0] ?? null;
   const pid = proveedor?.clientId ?? '';
-  const items = useMemo(() => value.items ?? [], [value.items]);
+  // En solo lectura los ítems llegan sin clave `_k` (no se normalizan): se les da una estable para las observaciones.
+  const items = useMemo(() => (soloLectura ? (value.items ?? []).map((it, i) => (it._k ? it : { ...it, _k: `r${it.id ?? i}` })) : value.items ?? []), [value.items, soloLectura]);
   const idBase = useId();
 
   const valueRef = useRef(value);
@@ -225,7 +241,7 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
 
   // Siempre exactamente un proveedor (el contratista del paso 1, con los porcentajes A.I.U. por defecto si es nuevo), al
   // menos una fila y una clave estable por fila. Todo en una sola actualización para no pisar al resto.
-  const necesitaNormalizar = !proveedor || proveedor.nombre !== nombreProveedor || proveedor.seleccionado !== true || value.proveedores.length !== 1 || items.length === 0 || items.some((it) => !it._k);
+  const necesitaNormalizar = !soloLectura && (!proveedor || proveedor.nombre !== nombreProveedor || proveedor.seleccionado !== true || value.proveedores.length !== 1 || items.length === 0 || items.some((it) => !it._k));
   useEffect(() => {
     if (!necesitaNormalizar) return;
     const v = valueRef.current;
@@ -238,6 +254,7 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
   // pasar a otro tipo se restauran los de defecto; el efecto solo corre cuando cambia `sinAiu`, no pisa lo editado luego.
   const sinAiuPrevio = useRef(sinAiu);
   useEffect(() => {
+    if (soloLectura) return;
     const v = valueRef.current;
     const p = v.proveedores?.[0];
     if (!p) return;
@@ -411,10 +428,26 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
         </div>
 
         <div id="sec-docs" className={s.docrow}>
-          <div className={`${s.cotizacion} ${cotizacion ? '' : s.cotizacionVacia}`}>
-            <Field label="Cotización" required error={errorCotizacion} helper="Imagen, PDF, Excel o Word">
-              {(p) => <FileField {...p} accept={ACCEPT_COTIZACION} value={cotizacion} onChange={onCotizacionChange} />}
-            </Field>
+          <div className={`${s.cotizacion} ${cotizacion || soloLectura ? '' : s.cotizacionVacia}`}>
+            {soloLectura ? (
+              <Field label="Cotización">
+                {() => (
+                  <div className={`${fileStyles.control} ${cotizacion ? fileStyles.controlFilled : ''}`}>
+                    <FileUp size={16} strokeWidth={1.75} className={cotizacion ? fileStyles.iconFilled : fileStyles.icon} aria-hidden="true" />
+                    <span className={fileStyles.filename}>{cotizacion ? 'Archivo cargado' : 'Sin archivo'}</span>
+                    {cotizacion && urlCotizacion && (
+                      <a className={fileStyles.selectLabel} href={urlCotizacion} target="_blank" rel="noreferrer">
+                        <span className={fileStyles.selectText}>Ver</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+              </Field>
+            ) : (
+              <Field label="Cotización" required error={errorCotizacion} helper="Imagen, PDF, Excel o Word">
+                {(p) => <FileField {...p} accept={ACCEPT_COTIZACION} value={cotizacion} onChange={onCotizacionChange} />}
+              </Field>
+            )}
           </div>
           <div className={s.contratista}>
             Contratista
@@ -427,15 +460,17 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
           <div className={s.tl}>
             <h2 className={s.h2}>Ítems a comparar</h2>
             <span className={s.legend} aria-hidden="true">
-              <span><i className={`${s.sw} ${s.swEdit}`} />Editable</span>
+              {!soloLectura && <span><i className={`${s.sw} ${s.swEdit}`} />Editable</span>}
               <span><i className={`${s.sw} ${s.swCalc}`} />Calculado</span>
             </span>
             <span className={s.aviso} role="status">{aviso}</span>
           </div>
-          <div className={s.tr}>
-            <button type="button" className={s.btn} onClick={() => setModalAbierto(true)}><ClipboardPaste size={16} aria-hidden="true" />Pegar desde Excel</button>
-            <button type="button" className={`${s.btn} ${s.btnPrimary}`} onClick={() => agregarFila(0)}><Plus size={16} aria-hidden="true" />Agregar ítem</button>
-          </div>
+          {!soloLectura && (
+            <div className={s.tr}>
+              <button type="button" className={s.btn} onClick={() => setModalAbierto(true)}><ClipboardPaste size={16} aria-hidden="true" />Pegar desde Excel</button>
+              <button type="button" className={`${s.btn} ${s.btnPrimary}`} onClick={() => agregarFila(0)}><Plus size={16} aria-hidden="true" />Agregar ítem</button>
+            </div>
+          )}
         </div>
 
         <div className={s.gridwrap}>
@@ -467,9 +502,9 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
                 <th className={s.gs} />
               </tr>
             </thead>
-            <tbody onKeyDown={onKeyDown} onPaste={onPaste}>
+            <tbody onKeyDown={soloLectura ? undefined : onKeyDown} onPaste={soloLectura ? undefined : onPaste}>
               {items.map((it, idx) => (
-                <Fila key={it._k ?? `i${idx}`} it={it} idx={idx} pid={pid} abierta={obsMapa[it._k] ?? Boolean(it.observaciones)} acc={acc} />
+                <Fila key={it._k ?? `i${idx}`} it={it} idx={idx} pid={pid} abierta={obsMapa[it._k] ?? Boolean(it.observaciones)} acc={acc} ro={soloLectura} />
               ))}
             </tbody>
             <tfoot>
@@ -487,11 +522,14 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
             </tfoot>
           </table>
         </div>
-        <button type="button" className={s.addrow} onClick={() => agregarFila(0)}><Plus size={16} aria-hidden="true" />Agregar ítem</button>
+        {!soloLectura && <button type="button" className={s.addrow} onClick={() => agregarFila(0)}><Plus size={16} aria-hidden="true" />Agregar ítem</button>}
         {children}
       </section>
 
       <div className={s.bottom}>
+        {/* En solo lectura no hay "Estado del paso" (es la guía para llenar el formulario): queda la celda vacía para que
+            "Costo total de la oferta" conserve su lugar a la derecha. */}
+        {soloLectura ? <div aria-hidden="true" /> : (
         <section className={`${s.card} ${s.panel}`} aria-label="Estado del paso">
           <h3>Estado del paso</h3>
           <ul className={s.status}>
@@ -507,6 +545,7 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
             {cotizacion && conDatos > 0 && faltas.length === 0 && <li className={s.stOk}><span className={s.ic}><Check size={12} aria-hidden="true" /></span>Todo listo para continuar</li>}
           </ul>
         </section>
+        )}
 
         <section className={`${s.card} ${s.panel}`} aria-label="Costo total de la oferta">
           <h3>Costo total de la oferta</h3>
@@ -524,7 +563,7 @@ export function CuadroComparativoGrid({ value, onChange, nombreProveedor = '', n
                   <tr key={campoPct}>
                     <td>{etiqueta}</td>
                     <td className={s.p}>
-                      <NumInput className={s.pct} value={proveedor?.[campoPct] ?? AIU_POR_DEFECTO[campoPct]} onCommit={(v) => setPct(campoPct, v)} aria-label={`Porcentaje de ${etiqueta.toLowerCase()}`} id={`${idBase}-${campoPct}`} /> %
+                      <NumInput className={s.pct} value={proveedor?.[campoPct] ?? AIU_POR_DEFECTO[campoPct]} onCommit={(v) => setPct(campoPct, v)} readOnly={soloLectura} aria-label={`Porcentaje de ${etiqueta.toLowerCase()}`} id={`${idBase}-${campoPct}`} /> %
                     </td>
                     <td>{formatMoney(costos[campoValor])}</td>
                   </tr>

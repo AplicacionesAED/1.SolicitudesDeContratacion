@@ -29,7 +29,9 @@ import {
   calcularTotalCantidadReal,
   calcularTotalValorSegunPpto,
   CAMPOS_AIU,
+  normalizarCuadroComparativo,
 } from './CuadroComparativoBuilder.jsx';
+import { CuadroComparativoGrid } from './CuadroComparativoGrid.jsx';
 import { calcularValorCalculada, calcularTotalColumna, ImagenAutenticada, normalizarMemoria } from './MemoriaBuilder.jsx';
 import { MemoriaTablaVista } from './MemoriaTablaEditor.jsx';
 import { BackLink } from '../../components/ui/BackLink.jsx';
@@ -124,6 +126,9 @@ export function SolicitudDetallePage() {
 
   if (error) return <p className={styles.errorBanner}>{error}</p>;
   if (!solicitud) return null;
+
+  // Misma regla que EditarSolicitudPage.jsx para elegir el formulario: Directa no histórica = formulario V2 (cuadrícula).
+  const usaCuadroGrid = solicitud.categoria === 'DIRECTA' && !solicitud.importadoHistorico;
 
   const SECCIONES = [
     { key: 'resumen', label: 'Resumen', visible: true },
@@ -383,7 +388,28 @@ export function SolicitudDetallePage() {
 
       {seccionActual === 'cuadro' && (
         <>
-      {solicitud.cuadroComparativo?.items?.length > 0 && (
+      {/* Directa (formulario V2): el MISMO cuadro del formulario (CuadroComparativoGrid) en solo lectura, para que se vea
+          exactamente igual. Indirecta y las históricas se llenan con SolicitudForm/CuadroComparativoBuilder: abajo su vista. */}
+      {usaCuadroGrid && solicitud.cuadroComparativo?.items?.length > 0 && (
+        <div className={styles.section}>
+          <CuadroComparativoGrid
+            soloLectura
+            value={normalizarCuadroComparativo(solicitud.cuadroComparativo)}
+            onChange={() => {}}
+            nombreProveedor={solicitud.cuadroComparativo.proveedores?.[0]?.nombre ?? solicitud.tercero?.razonSocial ?? ''}
+            nitProveedor={solicitud.tercero?.nit ?? ''}
+            contexto={{
+              proyecto: solicitud.proyectoNombre ?? '',
+              objeto: solicitud.descripcionActividad ?? '',
+              tipoContrato: solicitud.tipoContrato ? tipoContratoLabel(solicitud.tipoContrato) : '',
+            }}
+            cotizacion={solicitud.archivoCotizacion}
+            urlCotizacion={solicitud.archivoCotizacion ? urlArchivo(solicitud.archivoCotizacion) : undefined}
+            sinAiu={solicitud.tipoContrato === 'TRANSPORTE'}
+          />
+        </div>
+      )}
+      {!usaCuadroGrid && solicitud.cuadroComparativo?.items?.length > 0 && (
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Cuadro Comparativo</h2>
 
