@@ -387,230 +387,237 @@ export function SolicitudDetallePage() {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Cuadro Comparativo</h2>
 
-          {/* Ítems -- tabla fija, sin columnas por proveedor (mismo motivo
-              que en CuadroComparativoBuilder.jsx: no crece con el número de
-              proveedores). "Pendiente por consumir" (`cantidad`) y
-              "Cantidades reales" (`cantidadReal`) son 2 campos
-              INDEPENDIENTES (ver el comentario grande en
-              CuadroComparativoBuilder.jsx#calcularValorTotalItem) -- acá se
-              muestran en 2 tablas, igual que en el editor. */}
-          <div className={styles.card} style={{ overflowX: 'auto', overflowY: 'visible' }}>
-            <table className={styles.table} style={{ tableLayout: 'fixed' }}>
-              <thead>
-                <tr>
-                  <th rowSpan={2} style={{ width: '9%' }}>Código ítem</th>
-                  <th colSpan={2}>Descripción de ítem</th>
-                  {/* VR. Unit/V. Total (2026-09-09, "debo agregar tres
-                      columnas más") -- V. Total nunca se guarda, se calcula
-                      (calcularValorTotalPendiente, importado tal cual). */}
-                  <th colSpan={4}>Pendiente por consumir</th>
-                  <th rowSpan={2} style={{ width: '29%' }}>Observaciones</th>
-                </tr>
-                <tr>
-                  <th style={{ width: '13%' }}>Actividad</th>
-                  <th style={{ width: '11%' }}>Alcance</th>
-                  <th style={{ width: '6%' }}>Unidad</th>
-                  <th style={{ width: '6%' }}>Cantidad</th>
-                  <th style={{ width: '9%' }}>VR. Unit</th>
-                  <th style={{ width: '9%' }}>V. Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {solicitud.cuadroComparativo.items.map((it) => (
-                  <tr key={it.id}>
-                    <td>{it.codigoItem}</td>
-                    <td>{it.actividad}</td>
-                    <td>{it.alcance}</td>
-                    <td>{it.unidad}</td>
-                    <td>{it.cantidad}</td>
-                    <td>{formatCurrency(it.valorUnitarioPendiente)}</td>
-                    <td>{formatCurrency(calcularValorTotalPendiente(it))}</td>
-                    <td>{it.observaciones}</td>
-                  </tr>
-                ))}
-                <tr style={{ fontWeight: 700, background: 'var(--color-surface-sunken)' }}>
-                  <td colSpan={4}>TOTAL</td>
-                  <td>{calcularTotalCantidadPendiente(solicitud.cuadroComparativo.items)}</td>
-                  <td></td>
-                  <td>{formatCurrency(calcularTotalValorPendiente(solicitud.cuadroComparativo.items))}</td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {/* Mismo diseño que el formulario (CuadroComparativoBuilder.jsx, 2026-11-26: "como el formulario"), en solo
+              lectura: mismas tablas, columnas, anchos y orden; las celdas que allá se escriben acá son texto, y las
+              calculadas conservan el sombreado de "calculado" (`celdaCalc`). Sin leyenda: aquí nada es editable. */}
+          <div className={styles.cuadro}>
+            {/* 1. Ítems -- "Pendiente por consumir" (`cantidad`) y "Cantidades reales" (`cantidadReal`) son 2 campos
+                INDEPENDIENTES (ver CuadroComparativoBuilder.jsx#calcularValorTotalItem), en 2 tablas igual que el editor. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+              <p style={{ fontSize: 'var(--text-body-size)', fontWeight: 500, margin: 0 }}>Ítems a comparar</p>
+              <div className={styles.card} style={{ overflowX: 'auto', overflowY: 'visible' }}>
+                <table className={`${styles.table} ${styles.tableEditable}`} style={{ tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr>
+                      <th rowSpan={2} style={{ width: '9%' }}>Código ítem</th>
+                      <th rowSpan={2} style={{ width: '8%' }}>Código insumo</th>
+                      <th colSpan={2}>Descripción de ítem</th>
+                      <th colSpan={4}>Pendiente por consumir</th>
+                      <th rowSpan={2} style={{ width: '29%' }}>Observaciones</th>
+                    </tr>
+                    <tr>
+                      <th style={{ width: '13%' }}>Actividad o insumo</th>
+                      <th style={{ width: '11%' }}>Alcance</th>
+                      <th style={{ width: '6%' }}>Unidad</th>
+                      <th style={{ width: '6%' }}>Cantidad</th>
+                      <th style={{ width: '9%' }}>VR. Unit</th>
+                      <th style={{ width: '9%' }}>V. Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {solicitud.cuadroComparativo.items.map((it) => (
+                      <tr key={it.id}>
+                        <td>{it.codigoItem}</td>
+                        <td>{it.codigoInsumo}</td>
+                        <td>{it.actividad}</td>
+                        <td>{it.alcance}</td>
+                        <td>{it.unidad}</td>
+                        <td className={styles.celdaNum}>{it.cantidad}</td>
+                        <td className={styles.celdaNum}>{formatCurrency(it.valorUnitarioPendiente)}</td>
+                        <td className={`${styles.celdaCalc} ${styles.celdaNum}`}>{formatCurrency(calcularValorTotalPendiente(it))}</td>
+                        <td>{it.observaciones}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ fontWeight: 700, background: 'var(--color-surface-sunken)' }}>
+                      <td colSpan={5}>TOTAL</td>
+                      <td className={styles.celdaNum}>{calcularTotalCantidadPendiente(solicitud.cuadroComparativo.items)}</td>
+                      <td></td>
+                      <td className={styles.celdaNum}>{formatCurrency(calcularTotalValorPendiente(solicitud.cuadroComparativo.items))}</td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Misma tabla, con "Cantidades reales" (`cantidadReal`) -- la
-              cantidad que realmente se compra/contrata, la que de verdad
-              alimenta el Valor Total de cada proveedor más abajo. "V. Total
-              según PPTO" reutiliza el VR. Unit de Pendiente por consumir
-              (ver calcularValorTotalSegunPpto). */}
-          <div className={styles.card} style={{ overflowX: 'auto', overflowY: 'visible', marginTop: 'var(--space-sm)' }}>
-            <table className={styles.table} style={{ tableLayout: 'fixed' }}>
-              <thead>
-                <tr>
-                  <th rowSpan={2} style={{ width: '10%' }}>Código ítem</th>
-                  <th colSpan={2}>Descripción de ítem</th>
-                  <th colSpan={3}>Cantidades reales</th>
-                  <th rowSpan={2} style={{ width: '31%' }}>Observaciones</th>
-                </tr>
-                <tr>
-                  <th style={{ width: '14%' }}>Actividad</th>
-                  <th style={{ width: '12%' }}>Alcance</th>
-                  <th style={{ width: '7%' }}>Unidad</th>
-                  <th style={{ width: '7%' }}>Cantidad</th>
-                  <th style={{ width: '10%' }}>V. Total según PPTO</th>
-                </tr>
-              </thead>
-              <tbody>
-                {solicitud.cuadroComparativo.items.map((it) => (
-                  <tr key={it.id}>
-                    <td>{it.codigoItem}</td>
-                    <td>{it.actividad}</td>
-                    <td>{it.alcance}</td>
-                    <td>{it.unidad}</td>
-                    <td>{it.cantidadReal}</td>
-                    <td>{formatCurrency(calcularValorTotalSegunPpto(it))}</td>
-                    <td>{it.observaciones}</td>
-                  </tr>
-                ))}
-                <tr style={{ fontWeight: 700, background: 'var(--color-surface-sunken)' }}>
-                  <td colSpan={4}>TOTAL</td>
-                  <td>{calcularTotalCantidadReal(solicitud.cuadroComparativo.items)}</td>
-                  <td>{formatCurrency(calcularTotalValorSegunPpto(solicitud.cuadroComparativo.items))}</td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              {/* Misma tabla con "Cantidades reales" -- la que alimenta el Valor Total de cada proveedor. "V. Total según
+                  PPTO" reutiliza el VR. Unit de Pendiente por consumir (calcularValorTotalSegunPpto). */}
+              <div className={styles.card} style={{ overflowX: 'auto', overflowY: 'visible' }}>
+                <table className={`${styles.table} ${styles.tableEditable}`} style={{ tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr>
+                      <th rowSpan={2} style={{ width: '10%' }}>Código ítem</th>
+                      <th rowSpan={2} style={{ width: '9%' }}>Código insumo</th>
+                      <th colSpan={2}>Descripción de ítem</th>
+                      <th colSpan={3}>Cantidades reales</th>
+                      <th rowSpan={2} style={{ width: '31%' }}>Observaciones</th>
+                    </tr>
+                    <tr>
+                      <th style={{ width: '14%' }}>Actividad o insumo</th>
+                      <th style={{ width: '12%' }}>Alcance</th>
+                      <th style={{ width: '7%' }}>Unidad</th>
+                      <th style={{ width: '7%' }}>Cantidad</th>
+                      <th style={{ width: '10%' }}>V. Total según PPTO</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {solicitud.cuadroComparativo.items.map((it) => (
+                      <tr key={it.id}>
+                        <td>{it.codigoItem}</td>
+                        <td>{it.codigoInsumo}</td>
+                        <td>{it.actividad}</td>
+                        <td>{it.alcance}</td>
+                        <td>{it.unidad}</td>
+                        <td className={styles.celdaNum}>{it.cantidadReal}</td>
+                        <td className={`${styles.celdaCalc} ${styles.celdaNum}`}>{formatCurrency(calcularValorTotalSegunPpto(it))}</td>
+                        <td>{it.observaciones}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ fontWeight: 700, background: 'var(--color-surface-sunken)' }}>
+                      <td colSpan={5}>TOTAL</td>
+                      <td className={styles.celdaNum}>{calcularTotalCantidadReal(solicitud.cuadroComparativo.items)}</td>
+                      <td className={styles.celdaNum}>{formatCurrency(calcularTotalValorSegunPpto(solicitud.cuadroComparativo.items))}</td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-          {/* Comparación -- una tarjeta por proveedor con el Costo Total,
-              clic la abre en la pestaña de abajo. Se muestra igual en
-              Directa (pedido explícito del usuario: "que aparezca tal
-              cual... como si fuese comparación") -- ahí el Cuadro
-              Comparativo solo tiene UN proveedor (el mismo Tercero
-              contratista de la solicitud, ver
-              CuadroComparativoBuilder.jsx#proveedorUnico), así que es una
-              tarjeta sola en vez de varias, pero la misma pieza visual. */}
-          <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', marginTop: 'var(--space-md)' }}>
-            {solicitud.cuadroComparativo.proveedores.map((p) => {
-              const totales = calcularTotalesProveedor(solicitud.cuadroComparativo.items, { ...p, clientId: String(p.id) });
-              const activa = String(p.id) === (ccTab ?? String(solicitud.cuadroComparativo.proveedores[0]?.id));
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setCcTab(String(p.id))}
-                  style={{
-                    flex: '1 1 200px',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    border: p.seleccionado ? '2px solid var(--color-success-ink)' : activa ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: 'var(--space-md)',
-                    background: p.seleccionado ? 'var(--color-success-surface)' : 'var(--color-surface)',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
-                    <strong style={{ fontSize: 'var(--text-body-size)' }}>{p.nombre}</strong>
-                    {p.seleccionado && <Badge variant="success">Seleccionado</Badge>}
-                  </div>
-                  <p style={{ margin: '8px 0 0', fontSize: 'var(--text-title-size)', fontWeight: 700 }}>{formatCurrency(totales.costoTotal)}</p>
-                  <p style={{ margin: 0, fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)' }}>Subtotal {formatCurrency(totales.subtotal)}</p>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Pestañas -- detalle de precio por ítem del proveedor activo. */}
-          {(() => {
-            const proveedores = solicitud.cuadroComparativo.proveedores;
-            const idActivo = ccTab ?? String(proveedores[0]?.id);
-            const proveedorActivo = proveedores.find((p) => String(p.id) === idActivo);
-            // TRANSPORTE no lleva IVA ni AIU (2026-11-10): se ocultan Administración/Imprevisto/Utilidad/IVA sobre utilidad.
-            const camposAiu = solicitud.tipoContrato === 'TRANSPORTE' ? [] : CAMPOS_AIU;
-            if (!proveedorActivo) return null;
-            const clientIdActivo = String(proveedorActivo.id);
-            // Mismo cálculo que el editor -- calcularTotalesProveedor lee
-            // proveedor.clientId (acá el id real, como string) para buscar
-            // los precios en item.precios (keyed por id real también).
-            const totales = calcularTotalesProveedor(solicitud.cuadroComparativo.items, { ...proveedorActivo, clientId: clientIdActivo });
-            return (
-              <div style={{ marginTop: 'var(--space-md)' }}>
-                <div style={{ display: 'flex', gap: 'var(--space-md)', borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap' }}>
-                  {proveedores.map((p) => (
+            {/* 2. Comparación -- una tarjeta por proveedor con el Costo Total; clic abre su pestaña. En Directa es una
+                sola tarjeta (único proveedor = el contratista), misma pieza visual. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+              <p style={{ fontSize: 'var(--text-body-size)', fontWeight: 500, margin: 0 }}>Comparación</p>
+              <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+                {solicitud.cuadroComparativo.proveedores.map((p) => {
+                  const totales = calcularTotalesProveedor(solicitud.cuadroComparativo.items, { ...p, clientId: String(p.id) });
+                  const activa = String(p.id) === (ccTab ?? String(solicitud.cuadroComparativo.proveedores[0]?.id));
+                  return (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => setCcTab(String(p.id))}
                       style={{
-                        background: 'none',
-                        border: 'none',
+                        flex: '1 1 200px',
+                        textAlign: 'left',
                         cursor: 'pointer',
-                        padding: '8px 4px',
-                        fontSize: 'var(--text-body-size)',
-                        fontWeight: String(p.id) === idActivo ? 600 : 400,
-                        color: String(p.id) === idActivo ? 'var(--color-primary)' : 'var(--color-ink-muted)',
-                        borderBottom: String(p.id) === idActivo ? '2px solid var(--color-primary)' : '2px solid transparent',
-                        marginBottom: -1,
+                        border: p.seleccionado ? '2px solid var(--color-success-ink)' : activa ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: 'var(--space-sm) var(--space-md)',
+                        background: p.seleccionado ? 'var(--color-success-surface)' : 'var(--color-surface)',
+                        fontFamily: 'inherit',
                       }}
                     >
-                      {p.nombre}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                        <strong style={{ fontSize: 'var(--text-body-size)' }}>{p.nombre}</strong>
+                        {p.seleccionado && <Badge variant="success">Seleccionado</Badge>}
+                      </div>
+                      <p style={{ margin: '4px 0 0', fontSize: 'var(--text-title-size)', fontWeight: 700, color: 'var(--color-ink)' }}>{formatCurrency(totales.costoTotal)}</p>
+                      <p style={{ margin: 0, fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)' }}>Subtotal {formatCurrency(totales.subtotal)}</p>
                     </button>
-                  ))}
-                </div>
-                {/* % de AIU/IVA de ESTE proveedor -- el editor los muestra como
-                    campos editables; acá van como valores fijos, mismos 4
-                    campos (CAMPOS_AIU, importado de CuadroComparativoBuilder.jsx)
-                    para que agregar un campo de AIU nuevo no requiera tocar
-                    las dos vistas por separado. */}
-                <div style={{ display: 'flex', gap: 'var(--space-lg)', flexWrap: 'wrap', marginTop: 'var(--space-sm)' }}>
-                  {camposAiu.map(([campoPct, , label]) => (
-                    <span key={campoPct} style={{ fontSize: 'var(--text-data-size)' }}>
-                      {label}: <strong>{proveedorActivo[campoPct] ?? 0}%</strong>
-                    </span>
-                  ))}
-                </div>
-                <div className={styles.card} style={{ overflowX: 'auto', overflowY: 'visible', marginTop: 'var(--space-sm)' }}>
-                  <table className={styles.table} style={{ tableLayout: 'fixed' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ width: '40%' }}>Ítem</th>
-                        <th style={{ width: '18%' }}>Cantidad</th>
-                        <th style={{ width: '21%' }}>Valor unitario</th>
-                        <th style={{ width: '21%' }}>Valor total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {solicitud.cuadroComparativo.items.map((it) => (
-                        <tr key={it.id}>
-                          <td>{it.actividad}{it.alcance && <><br /><span style={{ fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)' }}>{it.alcance}</span></>}</td>
-                          {/* Cantidad Real (la que se compra/contrata), no
-                              Pendiente por consumir -- coherente con
-                              calcularValorTotalItem (cantidadReal). */}
-                          <td>{it.cantidadReal} {it.unidad}</td>
-                          <td>{formatCurrency(it.precios?.[clientIdActivo])}</td>
-                          <td>{formatCurrency(calcularValorTotalItem(it, clientIdActivo))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Desglose completo del total -- el editor lo muestra al pie
-                    de cada pestaña (Subtotal + cada componente de AIU/IVA ya
-                    calculado + Costo total); acá faltaba del todo, solo se
-                    veía el Costo Total/Subtotal resumido en la tarjeta de
-                    arriba. */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-md) var(--space-xl)', marginTop: 'var(--space-sm)', padding: 'var(--space-md)', background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-data-size)' }}>
-                  <span>Subtotal: <strong>{formatCurrency(totales.subtotal)}</strong></span>
-                  {camposAiu.map(([campoPct, campoValor, label]) => (
-                    <span key={campoPct}>{label}: <strong>{formatCurrency(totales[campoValor])}</strong></span>
-                  ))}
-                  <span>Costo total: <strong>{formatCurrency(totales.costoTotal)}</strong></span>
-                </div>
+                  );
+                })}
               </div>
-            );
-          })()}
+            </div>
+
+            {/* 3. Pestañas por proveedor -- precio por ítem + AIU/IVA del proveedor activo, en el mismo orden que el editor. */}
+            {(() => {
+              const proveedores = solicitud.cuadroComparativo.proveedores;
+              const idActivo = ccTab ?? String(proveedores[0]?.id);
+              const proveedorActivo = proveedores.find((p) => String(p.id) === idActivo);
+              // TRANSPORTE no lleva IVA ni AIU (2026-11-10): se ocultan Administración/Imprevisto/Utilidad/IVA sobre utilidad.
+              const camposAiu = solicitud.tipoContrato === 'TRANSPORTE' ? [] : CAMPOS_AIU;
+              if (!proveedorActivo) return null;
+              const clientIdActivo = String(proveedorActivo.id);
+              // Mismo cálculo que el editor -- calcularTotalesProveedor lee proveedor.clientId (acá el id real, como
+              // string) para buscar los precios en item.precios (keyed por id real también).
+              const totales = calcularTotalesProveedor(solicitud.cuadroComparativo.items, { ...proveedorActivo, clientId: clientIdActivo });
+              const tabStyle = (activo) => ({
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 4px',
+                fontSize: 'var(--text-body-size)',
+                fontWeight: activo ? 600 : 400,
+                color: activo ? 'var(--color-primary)' : 'var(--color-ink-muted)',
+                borderBottom: activo ? '2px solid var(--color-primary)' : '2px solid transparent',
+                marginBottom: -1,
+                whiteSpace: 'nowrap',
+              });
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-md)', borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap' }}>
+                    {proveedores.map((p) => (
+                      <button key={p.id} type="button" onClick={() => setCcTab(String(p.id))} style={tabStyle(String(p.id) === idActivo)}>
+                        {p.nombre}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                    {/* Nombre y "seleccionado" -- en el editor son un campo y un radio; aquí, texto. */}
+                    <div style={{ display: 'flex', gap: 'var(--space-lg)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Nombre del proveedor</span>
+                        <span className={styles.infoValue}>{proveedorActivo.nombre}</span>
+                      </div>
+                      {proveedorActivo.seleccionado && <Badge variant="success">Proveedor seleccionado</Badge>}
+                    </div>
+
+                    <div className={styles.card} style={{ overflowX: 'auto', overflowY: 'visible' }}>
+                      <table className={`${styles.table} ${styles.tableEditable}`} style={{ tableLayout: 'fixed' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: '40%' }}>Ítem</th>
+                            <th style={{ width: '18%' }}>Cantidad</th>
+                            <th style={{ width: '21%' }}>Valor unitario</th>
+                            <th style={{ width: '21%' }}>Valor total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {solicitud.cuadroComparativo.items.map((it) => (
+                            <tr key={it.id}>
+                              <td>
+                                {it.actividad || <em style={{ color: 'var(--color-ink-muted)' }}>Sin actividad</em>}
+                                {it.alcance && <><br /><span style={{ fontSize: 'var(--text-label-size)', color: 'var(--color-ink-muted)' }}>{it.alcance}</span></>}
+                              </td>
+                              {/* Cantidad Real (la que se compra/contrata), no Pendiente por consumir -- coherente con
+                                  calcularValorTotalItem (cantidadReal). */}
+                              <td className={styles.celdaNum}>{it.cantidadReal || 0} {it.unidad}</td>
+                              <td className={styles.celdaNum}>{formatCurrency(it.precios?.[clientIdActivo])}</td>
+                              <td className={`${styles.celdaCalc} ${styles.celdaNum}`}>{formatCurrency(calcularValorTotalItem(it, clientIdActivo))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* % de AIU/IVA de ESTE proveedor -- mismos campos (CAMPOS_AIU) y lugar que en el editor. */}
+                    {camposAiu.length > 0 && (
+                      <div style={{ display: 'flex', gap: 'var(--space-lg)', flexWrap: 'wrap' }}>
+                        {camposAiu.map(([campoPct, , label]) => (
+                          <div key={campoPct} className={styles.infoItem}>
+                            <span className={styles.infoLabel}>{label} (%)</span>
+                            <span className={styles.infoValue}>{proveedorActivo[campoPct] ?? 0}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-md) var(--space-xl)', padding: 'var(--space-md)', background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-data-size)' }}>
+                      <span>Subtotal: <strong>{formatCurrency(totales.subtotal)}</strong></span>
+                      {camposAiu.map(([campoPct, campoValor, label]) => (
+                        <span key={campoPct}>{label}: <strong>{formatCurrency(totales[campoValor])}</strong></span>
+                      ))}
+                      <span>Costo total: <strong>{formatCurrency(totales.costoTotal)}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       )}
 
